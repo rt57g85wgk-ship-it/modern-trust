@@ -62,7 +62,7 @@ function PropertyPage() {
         <div className="relative col-span-2 row-span-2 overflow-hidden rounded-2xl bg-muted">
           <img src={listing.gallery[active]} alt="" className="h-full max-h-[480px] w-full object-cover" />
         </div>
-        {listing.gallery.slice(0, 4).map((g, i) => (
+        {listing.gallery.slice(0, 4).map((g: string, i: number) => (
           <button
             key={i}
             onClick={() => setActive(i)}
@@ -113,7 +113,7 @@ function PropertyPage() {
           <section className="border-t border-border py-6">
             <h2 className="text-lg font-semibold">Amenities</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {listing.amenities.map((a) => (
+              {listing.amenities.map((a: string) => (
                 <div key={a} className="flex items-center gap-2 text-sm">
                   <Check className="h-4 w-4 text-success" /> {a}
                 </div>
