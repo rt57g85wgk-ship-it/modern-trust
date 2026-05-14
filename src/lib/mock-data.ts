@@ -10,7 +10,7 @@ export type Listing = {
   rating: number;
   reviews: number;
   available: boolean;
-  badge?: "Recommended" | "Featured" | "Top Pick";
+  badge?: "Recommended";
   image: string;
   gallery: string[];
   amenities: string[];
@@ -51,7 +51,6 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 28,
     rating: 4.8, reviews: 96,
     available: true,
-    badge: "Featured",
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
@@ -70,7 +69,6 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 35,
     rating: 4.7, reviews: 64,
     available: true,
-    badge: "Top Pick",
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",

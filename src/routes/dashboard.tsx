@@ -3,9 +3,13 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, Sparkles, Edit, Trash2, Image as ImageIcon, Repeat, Check, Clock, X,
+  DollarSign, Eye, EyeOff, Sparkles, Edit, Trash2, Repeat, Check, Clock, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { useApp } from "@/lib/app-context";
 import { listings, bookings } from "@/lib/mock-data";
 import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
@@ -164,8 +168,52 @@ function RenterView({ favorites }: { favorites: string[] }) {
   );
 }
 
+type Unit = {
+  id: string;
+  title: string;
+  location: string;
+  roomType: string;
+  price: number;
+  image: string;
+  available: boolean;
+  badge?: "Recommended";
+};
+
+const seedUnits: Unit[] = listings.slice(0, 4).map((l) => ({
+  id: l.id,
+  title: l.title,
+  location: l.location,
+  roomType: l.roomType,
+  price: l.price,
+  image: l.image,
+  available: l.available,
+  badge: l.badge === "Recommended" ? "Recommended" : undefined,
+}));
+
 function LandlordView() {
-  const [units, setUnits] = useState(listings.slice(0, 4));
+  const [units, setUnits] = useState<Unit[]>(seedUnits);
+  const [editing, setEditing] = useState<Unit | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const handleSave = (u: Unit) => {
+    setUnits((arr) => {
+      const exists = arr.some((x) => x.id === u.id);
+      if (exists) return arr.map((x) => (x.id === u.id ? u : x));
+      return [u, ...arr];
+    });
+    toast.success(exists(units, u.id) ? "Listing updated" : "Listing added");
+    setEditing(null);
+    setCreating(false);
+  };
+
+  const handleDelete = () => {
+    if (!deleteId) return;
+    setUnits((arr) => arr.filter((x) => x.id !== deleteId));
+    toast.success("Listing deleted");
+    setDeleteId(null);
+  };
+
   return (
     <div className="mt-8 space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -181,30 +229,64 @@ function LandlordView() {
             <h2 className="font-semibold">My listings</h2>
             <p className="text-xs text-muted-foreground">Manage units, pricing, and availability.</p>
           </div>
-          <Button className="gap-2"><Plus className="h-4 w-4" /> Add listing</Button>
+          <Button className="gap-2" onClick={() => setCreating(true)}>
+            <Plus className="h-4 w-4" /> Add listing
+          </Button>
         </div>
         <div className="divide-y divide-border">
+          {units.length === 0 && (
+            <div className="p-12 text-center text-sm text-muted-foreground">
+              No listings yet. Click <span className="font-medium text-foreground">Add listing</span> to create your first.
+            </div>
+          )}
           {units.map((u) => (
-            <div key={u.id} className="flex flex-wrap items-center gap-4 p-4 sm:flex-nowrap">
+            <div
+              key={u.id}
+              className={`flex flex-wrap items-center gap-4 p-4 sm:flex-nowrap ${!u.available ? "opacity-60" : ""}`}
+            >
               <img src={u.image} alt="" className="h-16 w-24 rounded-lg object-cover" />
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="truncate font-medium">{u.title}</p>
-                  {u.badge && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">{u.badge}</span>}
+                  {u.badge === "Recommended" && u.available && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground">
+                      <Sparkles className="h-2.5 w-2.5" /> Recommended
+                    </span>
+                  )}
+                  {!u.available && (
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                      Not Available
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{u.location} · {u.roomType} · ฿{u.price.toLocaleString()}/mo</p>
                 <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-medium text-brand-cyan">
                   <Sparkles className="h-3 w-3" /> AI suggests +฿1,500 based on demand
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <PromoteToggle title={u.title} monthlyRent={u.price} />
-                <Button variant="outline" size="icon" className="h-9 w-9"><ImageIcon className="h-4 w-4" /></Button>
-                <Button variant="outline" size="icon" className="h-9 w-9"><Edit className="h-4 w-4" /></Button>
+              <div className="flex items-center gap-2">
+                <PromoteToggle
+                  title={u.title}
+                  monthlyRent={u.price}
+                  promoted={u.badge === "Recommended"}
+                  onPromote={() => setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, badge: "Recommended" } : x))}
+                  onUnpromote={() => setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, badge: undefined } : x))}
+                />
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: !x.available } : x))}
+                  className="gap-1.5"
+                >
+                  {u.available ? <><EyeOff className="h-3.5 w-3.5" /> Unlist</> : <><Eye className="h-3.5 w-3.5" /> Relist</>}
+                </Button>
+                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setEditing(u)} aria-label="Edit">
+                  <Edit className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="outline" size="icon"
                   className="h-9 w-9 text-destructive hover:bg-destructive/10"
-                  onClick={() => setUnits((u2) => u2.filter((x) => x.id !== u.id))}
+                  onClick={() => setDeleteId(u.id)}
+                  aria-label="Delete"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -251,22 +333,151 @@ function LandlordView() {
           </ul>
         </section>
       </div>
+
+      <ListingFormDialog
+        open={creating || !!editing}
+        initial={editing}
+        onClose={() => { setCreating(false); setEditing(null); }}
+        onSave={handleSave}
+      />
+      <DeleteConfirm
+        open={!!deleteId}
+        onCancel={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+        title={units.find((u) => u.id === deleteId)?.title}
+      />
     </div>
   );
 }
 
-function PromoteToggle({ title, monthlyRent }: { title: string; monthlyRent: number }) {
-  const [on, setOn] = useState(false);
+function exists(arr: Unit[], id: string) {
+  return arr.some((x) => x.id === id);
+}
+
+function ListingFormDialog({
+  open, initial, onClose, onSave,
+}: { open: boolean; initial: Unit | null; onClose: () => void; onSave: (u: Unit) => void }) {
+  const isEdit = !!initial;
+  const [form, setForm] = useState<Unit>(() => initial ?? blankUnit());
+
+  useEffect(() => {
+    setForm(initial ?? blankUnit());
+  }, [initial, open]);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit listing" : "Add new listing"}</DialogTitle>
+          <DialogDescription>
+            {isEdit ? "Update your unit details and availability." : "Create a new rental listing for your portfolio."}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <Field label="Title">
+            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. The Line Ari — Skyline 1BR" />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Location">
+              <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Bangkok" />
+            </Field>
+            <Field label="Room type">
+              <Input value={form.roomType} onChange={(e) => setForm({ ...form, roomType: e.target.value })} placeholder="1 Bedroom" />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Monthly rent (฿)">
+              <Input type="number" min={0} value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
+            </Field>
+            <Field label="Image URL">
+              <Input value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://..." />
+            </Field>
+          </div>
+          <label className="flex items-center justify-between rounded-lg border border-border p-3">
+            <div>
+              <p className="text-sm font-medium">Available for booking</p>
+              <p className="text-xs text-muted-foreground">Renters can book or contact you.</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.available}
+              onChange={(e) => setForm({ ...form, available: e.target.checked })}
+              className="h-4 w-4 accent-primary"
+            />
+          </label>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button
+            onClick={() => onSave({ ...form, id: form.id || `u-${Date.now()}` })}
+            disabled={!form.title.trim() || form.price <= 0}
+          >
+            {isEdit ? "Save changes" : "Create listing"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function blankUnit(): Unit {
+  return {
+    id: "",
+    title: "",
+    location: "",
+    roomType: "Studio",
+    price: 15000,
+    image: "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
+    available: true,
+  };
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function DeleteConfirm({ open, onCancel, onConfirm, title }: { open: boolean; onCancel: () => void; onConfirm: () => void; title?: string }) {
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Delete this listing?</DialogTitle>
+          <DialogDescription>
+            <span className="font-medium text-foreground">{title}</span> will be permanently removed from your portfolio. This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm} className="gap-2">
+            <Trash2 className="h-4 w-4" /> Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function PromoteToggle({
+  title, monthlyRent, promoted, onPromote, onUnpromote,
+}: {
+  title: string; monthlyRent: number; promoted: boolean;
+  onPromote: () => void; onUnpromote: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
-        onClick={() => (on ? setOn(false) : setOpen(true))}
+        onClick={() => (promoted ? onUnpromote() : setOpen(true))}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-          on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+          promoted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
         }`}
       >
-        <Sparkles className="h-3 w-3" /> {on ? "Promoted" : "Promote"}
+        <Sparkles className="h-3 w-3" /> {promoted ? "Promoted" : "Promote"}
       </button>
       <PromoteModal
         open={open}
@@ -274,7 +485,7 @@ function PromoteToggle({ title, monthlyRent }: { title: string; monthlyRent: num
         monthlyRent={monthlyRent}
         listingTitle={title}
         onConfirm={(pkg: PromotePackage, price: number) => {
-          setOn(true);
+          onPromote();
           setOpen(false);
           toast.success(`Promotion activated · ${pkg.days} days · ฿${Math.round(price).toLocaleString()}`);
         }}

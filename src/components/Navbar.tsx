@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Globe, LogOut, Settings, Menu, X, LayoutDashboard } from "lucide-react";
+import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard } from "lucide-react";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/app-context";
 import { Button } from "@/components/ui/button";
@@ -68,8 +68,8 @@ export function Navbar() {
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Settings" className="h-9 w-9">
-                <Settings className="h-4 w-4" />
+              <Button variant="ghost" size="icon" aria-label="Menu" className="h-9 w-9">
+                <Menu className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
