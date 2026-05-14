@@ -462,18 +462,22 @@ function DeleteConfirm({ open, onCancel, onConfirm, title }: { open: boolean; on
   );
 }
 
-function PromoteToggle({ title, monthlyRent }: { title: string; monthlyRent: number }) {
-  const [on, setOn] = useState(false);
+function PromoteToggle({
+  title, monthlyRent, promoted, onPromote, onUnpromote,
+}: {
+  title: string; monthlyRent: number; promoted: boolean;
+  onPromote: () => void; onUnpromote: () => void;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <button
-        onClick={() => (on ? setOn(false) : setOpen(true))}
+        onClick={() => (promoted ? onUnpromote() : setOpen(true))}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-          on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+          promoted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
         }`}
       >
-        <Sparkles className="h-3 w-3" /> {on ? "Promoted" : "Promote"}
+        <Sparkles className="h-3 w-3" /> {promoted ? "Promoted" : "Promote"}
       </button>
       <PromoteModal
         open={open}
@@ -481,7 +485,7 @@ function PromoteToggle({ title, monthlyRent }: { title: string; monthlyRent: num
         monthlyRent={monthlyRent}
         listingTitle={title}
         onConfirm={(pkg: PromotePackage, price: number) => {
-          setOn(true);
+          onPromote();
           setOpen(false);
           toast.success(`Promotion activated · ${pkg.days} days · ฿${Math.round(price).toLocaleString()}`);
         }}
