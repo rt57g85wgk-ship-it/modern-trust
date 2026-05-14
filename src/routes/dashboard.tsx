@@ -3,9 +3,13 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
   ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, Sparkles, Edit, Trash2, Image as ImageIcon, Repeat, Check, Clock, X,
+  DollarSign, Eye, EyeOff, Sparkles, Edit, Trash2, Repeat, Check, Clock, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { useApp } from "@/lib/app-context";
 import { listings, bookings } from "@/lib/mock-data";
 import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
