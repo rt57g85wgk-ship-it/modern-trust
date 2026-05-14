@@ -93,19 +93,31 @@ function LoginPage() {
 export function RoleToggle({ role, setRole }: { role: "renter" | "landlord"; setRole: (r: "renter" | "landlord") => void }) {
   return (
     <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-border bg-muted/40 p-1">
-      {([["renter", "I'm renting", User], ["landlord", "I'm hosting", HomeIcon]] as const).map(([k, l, Icon]) => (
-        <button
-          key={k}
-          type="button"
-          onClick={() => setRole(k)}
-          className={`relative flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-            role === k ? "text-foreground" : "text-muted-foreground"
-          }`}
-        >
-          {role === k && <motion.div layoutId="roleBg" className="absolute inset-0 rounded-lg bg-card shadow-soft" />}
-          <span className="relative flex items-center gap-2"><Icon className="h-4 w-4" /> {l}</span>
-        </button>
-      ))}
+      {([["renter", "I'm renting", User], ["landlord", "I'm hosting", HomeIcon]] as const).map(([k, l, Icon]) => {
+        const selected = role === k;
+        return (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setRole(k)}
+            aria-pressed={selected}
+            className={`relative flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+              selected
+                ? "text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
+            {selected && (
+              <motion.div
+                layoutId="roleBg"
+                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                className="absolute inset-0 rounded-lg bg-primary shadow-glow ring-1 ring-primary/40"
+              />
+            )}
+            <span className="relative flex items-center gap-2"><Icon className="h-4 w-4" /> {l}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
