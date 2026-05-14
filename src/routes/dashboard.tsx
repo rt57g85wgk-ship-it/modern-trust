@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-context";
 import { listings, bookings } from "@/lib/mock-data";
+import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -196,7 +198,7 @@ function LandlordView() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <PromoteToggle />
+                <PromoteToggle title={u.title} monthlyRent={u.price} />
                 <Button variant="outline" size="icon" className="h-9 w-9"><ImageIcon className="h-4 w-4" /></Button>
                 <Button variant="outline" size="icon" className="h-9 w-9"><Edit className="h-4 w-4" /></Button>
                 <Button
@@ -253,17 +255,31 @@ function LandlordView() {
   );
 }
 
-function PromoteToggle() {
+function PromoteToggle({ title, monthlyRent }: { title: string; monthlyRent: number }) {
   const [on, setOn] = useState(false);
+  const [open, setOpen] = useState(false);
   return (
-    <button
-      onClick={() => setOn(!on)}
-      className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-        on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
-      }`}
-    >
-      <Sparkles className="h-3 w-3" /> {on ? "Promoted" : "Promote"}
-    </button>
+    <>
+      <button
+        onClick={() => (on ? setOn(false) : setOpen(true))}
+        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+          on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+        }`}
+      >
+        <Sparkles className="h-3 w-3" /> {on ? "Promoted" : "Promote"}
+      </button>
+      <PromoteModal
+        open={open}
+        onClose={() => setOpen(false)}
+        monthlyRent={monthlyRent}
+        listingTitle={title}
+        onConfirm={(pkg: PromotePackage, price: number) => {
+          setOn(true);
+          setOpen(false);
+          toast.success(`Promotion activated · ${pkg.days} days · ฿${Math.round(price).toLocaleString()}`);
+        }}
+      />
+    </>
   );
 }
 
