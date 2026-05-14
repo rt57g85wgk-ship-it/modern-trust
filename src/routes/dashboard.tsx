@@ -8,6 +8,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-context";
 import { listings, bookings } from "@/lib/mock-data";
+import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
