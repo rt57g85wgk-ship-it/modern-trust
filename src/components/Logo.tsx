@@ -5,12 +5,17 @@ interface LogoProps {
 }
 
 export function Logo({ className = "", showWordmark = true, variant = "default" }: LogoProps) {
-  const navy = variant === "light" ? "#FFFFFF" : "#0D1B2A";
+  // "light" forces white (for use over dark/brand-gradient backgrounds).
+  // "default" uses currentColor so the logo automatically adapts to light/dark theme.
+  const isLight = variant === "light";
+  const strokeColor = isLight ? "#FFFFFF" : "currentColor";
   return (
-    <div className={`flex items-center gap-2 ${className}`}>
+    <div
+      className={`flex items-center gap-2 ${className} ${isLight ? "text-white" : "text-foreground"}`}
+    >
       <svg viewBox="0 0 48 48" className="h-8 w-8" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-        <path d="M8 22 L24 8 L40 22 V40 H8 Z" stroke={navy} strokeWidth="2.5" strokeLinejoin="round" />
-        <rect x="20" y="26" width="8" height="14" stroke={navy} strokeWidth="2" />
+        <path d="M8 22 L24 8 L40 22 V40 H8 Z" stroke={strokeColor} strokeWidth="2.5" strokeLinejoin="round" />
+        <rect x="20" y="26" width="8" height="14" stroke={strokeColor} strokeWidth="2" />
         <circle cx="13" cy="30" r="2" fill="#2563EB" />
         <circle cx="9" cy="36" r="1.5" fill="#06B6D4" />
         <path d="M13 30 L18 33" stroke="#2563EB" strokeWidth="2" strokeLinecap="round" />
@@ -19,7 +24,7 @@ export function Logo({ className = "", showWordmark = true, variant = "default" 
       </svg>
       {showWordmark && (
         <div className="flex flex-col leading-none">
-          <span className="font-display text-base font-bold tracking-tight" style={{ color: navy }}>
+          <span className="font-display text-base font-bold tracking-tight">
             Modern<span className="text-brand-blue"> Trust</span>
           </span>
           <span className="text-[9px] font-medium tracking-[0.2em] text-muted-foreground">RENTAL PLATFORM</span>
