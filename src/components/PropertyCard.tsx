@@ -5,11 +5,7 @@ import { useApp } from "@/lib/app-context";
 import type { Listing } from "@/lib/mock-data";
 import { useState } from "react";
 
-const badgeStyles: Record<string, string> = {
-  Recommended: "bg-primary text-primary-foreground",
-  Featured: "bg-brand-cyan text-white",
-  "Top Pick": "bg-success text-success-foreground",
-};
+import { Sparkles } from "lucide-react";
 
 export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?: number }) {
   const { favorites, toggleFavorite } = useApp();
