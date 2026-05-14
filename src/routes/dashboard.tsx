@@ -198,7 +198,7 @@ function LandlordView() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <PromoteToggle />
+                <PromoteToggle title={u.title} monthlyRent={u.price} />
                 <Button variant="outline" size="icon" className="h-9 w-9"><ImageIcon className="h-4 w-4" /></Button>
                 <Button variant="outline" size="icon" className="h-9 w-9"><Edit className="h-4 w-4" /></Button>
                 <Button
