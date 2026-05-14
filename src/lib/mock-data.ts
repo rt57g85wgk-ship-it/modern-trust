@@ -10,7 +10,10 @@ export type Listing = {
   rating: number;
   reviews: number;
   available: boolean;
-  badge?: "Recommended";
+  /** Paid placement — surfaced in the “Recommended For You” shelf only (no card badge). */
+  promoted?: boolean;
+  /** Earliest move-in (YYYY-MM-DD) for relevance scoring when renter picks a date. */
+  availableFrom?: string;
   image: string;
   gallery: string[];
   amenities: string[];
@@ -31,14 +34,15 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 32,
     rating: 4.9, reviews: 128,
     available: true,
-    badge: "Recommended",
+    promoted: true,
+    availableFrom: "2026-05-01",
     image: img(1505691938895, 1200, 800).replace("photo-", "photo-1505691938895-1758d7feb511?ixlib=rb-4.0.3&"),
     gallery: [
       "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
     ],
-    amenities: ["Wi-Fi", "Air Conditioning", "Pool", "Gym", "Parking", "Pet friendly"],
+    amenities: ["Wi-Fi", "Air Conditioning", "Gym", "Parking", "Pet Friendly", "Elevator"],
     description: "Bright corner unit with panoramic city views, walkable to BTS Ari. Fully furnished, fiber internet, 24/7 security.",
     landlord: { name: "Aria Property Co.", verified: true, avatar: "https://i.pravatar.cc/100?img=12" },
   },
@@ -51,12 +55,13 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 28,
     rating: 4.8, reviews: 96,
     available: true,
+    availableFrom: "2026-06-15",
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
     ],
-    amenities: ["Wi-Fi", "Smart Lock", "Co-working", "Pool"],
+    amenities: ["Wi-Fi", "Gym", "Elevator", "Furnished", "Kitchen"],
     description: "Designer studio loft with double-height ceilings. Steps from Ekkamai BTS.",
     landlord: { name: "Urban Stay", verified: true, avatar: "https://i.pravatar.cc/100?img=32" },
   },
@@ -69,12 +74,13 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 35,
     rating: 4.7, reviews: 64,
     available: true,
+    availableFrom: "2026-05-20",
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=80",
       "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=1200&q=80",
     ],
-    amenities: ["Wi-Fi", "Garden View", "Gym", "Parking"],
+    amenities: ["Wi-Fi", "Gym", "Parking", "Air Conditioning", "Laundry"],
     description: "Quiet residential building with leafy garden views and full amenities.",
     landlord: { name: "Noble Living", verified: true, avatar: "https://i.pravatar.cc/100?img=23" },
   },
@@ -87,9 +93,10 @@ export const listings: Listing[] = [
     beds: 2, baths: 2, sqm: 56,
     rating: 4.9, reviews: 211,
     available: true,
+    availableFrom: "2026-04-01",
     image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80",
     gallery: ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=80"],
-    amenities: ["Wi-Fi", "Pool", "Gym", "Sky Lounge", "EV Charger"],
+    amenities: ["Wi-Fi", "Gym", "Elevator", "Air Conditioning", "Laundry"],
     description: "Spacious two-bedroom with skyline lounge access and resort-style pool.",
     landlord: { name: "Ananda", verified: true, avatar: "https://i.pravatar.cc/100?img=45" },
   },
@@ -102,9 +109,10 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 26,
     rating: 4.6, reviews: 88,
     available: false,
+    availableFrom: "2026-08-01",
     image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80",
     gallery: ["https://images.unsplash.com/photo-1493809842364-78817add7ffb?auto=format&fit=crop&w=1200&q=80"],
-    amenities: ["Wi-Fi", "Pool", "Co-working"],
+    amenities: ["Wi-Fi", "Gym", "Laundry"],
     description: "Compact, efficient studio in the heart of Thonglor nightlife district.",
     landlord: { name: "Origin Group", verified: false, avatar: "https://i.pravatar.cc/100?img=15" },
   },
@@ -117,10 +125,11 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 30,
     rating: 4.8, reviews: 142,
     available: true,
-    badge: "Recommended",
+    promoted: true,
+    availableFrom: "2026-05-10",
     image: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=1200&q=80",
     gallery: ["https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=1200&q=80"],
-    amenities: ["Wi-Fi", "Smart Home", "Pool", "Gym"],
+    amenities: ["Wi-Fi", "Gym", "Air Conditioning", "Furnished", "Kitchen"],
     description: "Newly renovated studio with smart home automation, steps from Asoke BTS.",
     landlord: { name: "AP Thailand", verified: true, avatar: "https://i.pravatar.cc/100?img=8" },
   },

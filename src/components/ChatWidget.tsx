@@ -1,50 +1,55 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, X, Send, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 
 type Msg = { role: "user" | "ai"; text: string };
 
-const seedReply = (q: string): string => {
-  const t = q.toLowerCase();
-  if (/hello|hi|hey/.test(t)) return "Hi there! 👋 I can help you find rentals, recommend rooms, or simulate a booking. What are you looking for?";
-  if (/recommend|suggest/.test(t)) return "Based on popular picks: try The Line Ari (฿16,000) or Life Asoke Studio (฿17,500). Both have 4.8+ ratings and verified landlords.";
-  if (/book|booking/.test(t)) return "To book: open any listing → choose your move-in date → tap Book Now. Booking confirmation is simulated in this demo.";
-  if (/budget|price|cheap/.test(t)) return "We have great units from ฿14,500 (Park Origin Thonglor) up to ฿32,000 (Ideo Mobi 2BR). Use the budget filter on the home page.";
-  if (/location|where|area/.test(t)) return "Popular areas: Ari, Asoke, Thonglor, Ekkamai, Phrom Phong. All BTS-accessible.";
-  if (/safe|verified|trust/.test(t)) return "All landlords go through ID verification. Look for the blue ✓ verified badge on listings.";
-  return "I'm a demo assistant — try asking about budget, location, recommendations, or booking flow!";
-};
+function seedReply(q: string, tr: (k: string) => string): string {
+  const lower = q.toLowerCase();
+  if (/hello|hi|hey/.test(lower)) return tr("chat.replyHello");
+  if (/recommend|suggest/.test(lower)) return tr("chat.replyRecommend");
+  if (/book|booking/.test(lower)) return tr("chat.replyBook");
+  if (/budget|price|cheap/.test(lower)) return tr("chat.replyBudget");
+  if (/location|where|area/.test(lower)) return tr("chat.replyLocation");
+  if (/safe|verified|trust/.test(lower)) return tr("chat.replyTrust");
+  return tr("chat.replyDefault");
+}
 
 export function ChatWidget() {
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [msgs, setMsgs] = useState<Msg[]>([
-    { role: "ai", text: "Hi! I'm Trust AI ✨ Ask me anything about rentals, listings, or how booking works." },
-  ]);
+  const [msgs, setMsgs] = useState<Msg[]>([{ role: "ai", text: t("chat.greeting") }]);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMsgs([{ role: "ai", text: i18n.t("chat.greeting") }]);
+  }, [i18n.language, i18n]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [msgs, open]);
 
-  const send = () => {
+  const send = useCallback(() => {
     const q = input.trim();
     if (!q) return;
     setMsgs((m) => [...m, { role: "user", text: q }]);
     setInput("");
-    setTimeout(() => setMsgs((m) => [...m, { role: "ai", text: seedReply(q) }]), 600);
-  };
+    setTimeout(() => setMsgs((m) => [...m, { role: "ai", text: seedReply(q, t) }]), 600);
+  }, [input, t]);
 
   return (
     <>
       <motion.button
+        type="button"
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.5, type: "spring" }}
         onClick={() => setOpen((o) => !o)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-white shadow-glow transition-transform hover:scale-105"
-        aria-label="Open AI chat"
+        aria-label={t("chat.open")}
       >
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
@@ -74,16 +79,18 @@ export function ChatWidget() {
                   <Sparkles className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold">Trust AI</p>
-                  <p className="text-[11px] text-white/70">Online · usually replies instantly</p>
+                  <p className="text-sm font-semibold">{t("chat.title")}</p>
+                  <p className="text-[11px] text-white/70">{t("chat.subtitle")}</p>
                 </div>
               </div>
-              <button onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-white/15"><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-white/15" aria-label={t("common.close")}>
+                <X className="h-4 w-4" />
+              </button>
             </div>
             <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
               {msgs.map((m, i) => (
                 <motion.div
-                  key={i}
+                  key={`${i}-${m.text.slice(0, 20)}`}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
@@ -104,10 +111,12 @@ export function ChatWidget() {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && send()}
-                  placeholder="Ask about rentals…"
+                  placeholder={t("chat.placeholder")}
                   className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
-                <Button size="icon" className="h-8 w-8" onClick={send}><Send className="h-4 w-4" /></Button>
+                <Button size="icon" className="h-8 w-8" onClick={send} aria-label={t("chat.send")}>
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           </motion.div>

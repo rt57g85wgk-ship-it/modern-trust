@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import i18n from "@/lib/i18n";
 
 type Role = "renter" | "landlord";
 type User = { name: string; email: string; role: Role } | null;
@@ -7,7 +8,6 @@ type Ctx = {
   user: User;
   favorites: string[];
   theme: "light" | "dark";
-  lang: "EN" | "TH";
   login: (u: NonNullable<User>) => void;
   logout: () => void;
   toggleFavorite: (id: string) => void;
@@ -22,17 +22,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [lang, setLang] = useState<"EN" | "TH">("EN");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const u = localStorage.getItem("mt_user");
     const f = localStorage.getItem("mt_fav");
     const t = (localStorage.getItem("mt_theme") as "light" | "dark") || "light";
+    const lang = localStorage.getItem("mt_lang");
     if (u) setUser(JSON.parse(u));
     if (f) setFavorites(JSON.parse(f));
     setTheme(t);
     document.documentElement.classList.toggle("dark", t === "dark");
+    if (lang === "th" || lang === "TH") void i18n.changeLanguage("th");
+    else void i18n.changeLanguage("en");
   }, []);
 
   useEffect(() => {
@@ -56,7 +58,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("mt_theme", next);
     document.documentElement.classList.toggle("dark", next === "dark");
   };
-  const toggleLang = () => setLang((l) => (l === "EN" ? "TH" : "EN"));
+  const toggleLang = () => {
+    const next = i18n.language === "th" ? "en" : "th";
+    void i18n.changeLanguage(next);
+  };
   const switchRole = () => {
     if (!user) return;
     const next: User = { ...user, role: user.role === "renter" ? "landlord" : "renter" };
@@ -65,7 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AppContext.Provider value={{ user, favorites, theme, lang, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole }}>
+    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole }}>
       {children}
     </AppContext.Provider>
   );

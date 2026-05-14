@@ -1,10 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { useState } from "react";
-import { Mail, Lock, User, Home as HomeIcon, ShieldCheck, Chrome, Apple, AlertCircle, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import { User, Home as HomeIcon, ShieldCheck, Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-context";
 import { Logo } from "@/components/Logo";
+import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -12,25 +14,15 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { login } = useApp();
+  const { user } = useApp();
   const nav = useNavigate();
-  const [role, setRole] = useState<"renter" | "landlord">("renter");
-  const [email, setEmail] = useState("");
-  const [pass, setPass] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation();
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return setError("Please enter a valid email.");
-    if (pass.length < 6) return setError("Password must be at least 6 characters.");
-    setLoading(true);
-    setTimeout(() => {
-      login({ name: email.split("@")[0].replace(/\W/g, " "), email, role });
-      nav({ to: "/dashboard" });
-    }, 700);
-  };
+  useEffect(() => {
+    if (user) void nav({ to: "/dashboard" });
+  }, [user, nav]);
+
+  const [role, setRole] = useState<"renter" | "landlord">("renter");
 
   return (
     <div className="relative grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
@@ -39,10 +31,15 @@ function LoginPage() {
         <div className="relative flex h-full flex-col justify-between p-12 text-white">
           <Logo variant="light" />
           <div>
-            <h2 className="text-3xl font-bold leading-tight">Welcome back to a smarter way to rent.</h2>
-            <p className="mt-3 max-w-md text-white/80">Verified hosts, transparent prices, and an AI assistant that actually helps.</p>
-            <div className="mt-8 grid grid-cols-2 gap-3 max-w-sm">
-              {[["12,400+", "listings"], ["100%", "verified hosts"], ["4.9★", "avg rating"], ["24/7", "AI support"]].map(([n, l]) => (
+            <h2 className="text-3xl font-bold leading-tight">{t("auth.loginHeroTitle")}</h2>
+            <p className="mt-3 max-w-md text-white/80">{t("auth.loginHeroSubtitle")}</p>
+            <div className="mt-8 grid max-w-sm grid-cols-2 gap-3">
+              {[
+                ["12,400+", t("auth.loginStatListings")],
+                ["100%", t("auth.loginStatHosts")],
+                ["4.9★", t("auth.loginStatRating")],
+                ["24/7", t("auth.loginStatSupport")],
+              ].map(([n, l]) => (
                 <div key={l} className="rounded-xl bg-white/10 p-4 backdrop-blur">
                   <div className="text-2xl font-bold">{n}</div>
                   <div className="text-xs text-white/70">{l}</div>
@@ -50,39 +47,26 @@ function LoginPage() {
               ))}
             </div>
           </div>
-          <p className="text-xs text-white/60">© Modern Trust · Smart Rental Platform</p>
+          <p className="text-xs text-white/60">{t("auth.footerCopyright")}</p>
         </div>
       </div>
 
       <div className="flex items-center justify-center px-4 py-12 sm:px-8">
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-          <h1 className="text-2xl font-bold">Sign in</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Welcome back. Please enter your details.</p>
+          <h1 className="text-2xl font-bold">{t("auth.signIn")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("auth.signInSubtitle")}</p>
 
           <RoleToggle role={role} setRole={setRole} />
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
-            <Input icon={Mail} type="email" placeholder="you@example.com" value={email} onChange={setEmail} />
-            <Input icon={Lock} type="password" placeholder="Password" value={pass} onChange={setPass} />
-            {error && (
-              <motion.p initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-1.5 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" /> {error}
-              </motion.p>
-            )}
-            <Button type="submit" size="lg" className="w-full" disabled={loading}>
-              {loading ? "Signing in…" : "Sign in"}
-            </Button>
-          </form>
-
-          <Divider />
-
-          <div className="grid grid-cols-2 gap-3">
-            <Button variant="outline" className="gap-2"><Chrome className="h-4 w-4" /> Google</Button>
-            <Button variant="outline" className="gap-2"><Apple className="h-4 w-4" /> Apple</Button>
+          <div className="mt-8">
+            <GoogleAuthButton role={role} />
           </div>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Don't have an account? <Link to="/register" className="font-medium text-primary hover:underline">Create one</Link>
+            {t("auth.noAccount")}{" "}
+            <Link to="/register" className="font-medium text-primary hover:underline">
+              {t("auth.createOne")}
+            </Link>
           </p>
         </motion.div>
       </div>
@@ -91,10 +75,13 @@ function LoginPage() {
 }
 
 export function RoleToggle({ role, setRole }: { role: "renter" | "landlord"; setRole: (r: "renter" | "landlord") => void }) {
+  const { t } = useTranslation();
   return (
     <div className="mt-6 grid grid-cols-2 gap-2 rounded-xl border border-border bg-muted/40 p-1">
-      {([["renter", "I'm renting", User], ["landlord", "I'm hosting", HomeIcon]] as const).map(([k, l, Icon]) => {
+      {(["renter", "landlord"] as const).map((k) => {
         const selected = role === k;
+        const label = k === "renter" ? t("auth.renterRole") : t("auth.landlordRole");
+        const Icon = k === "renter" ? User : HomeIcon;
         return (
           <button
             key={k}
@@ -114,7 +101,9 @@ export function RoleToggle({ role, setRole }: { role: "renter" | "landlord"; set
                 className="absolute inset-0 rounded-lg bg-primary shadow-glow ring-1 ring-primary/40"
               />
             )}
-            <span className="relative flex items-center gap-2"><Icon className="h-4 w-4" /> {l}</span>
+            <span className="relative flex items-center gap-2">
+              <Icon className="h-4 w-4" /> {label}
+            </span>
           </button>
         );
       })}
@@ -122,27 +111,6 @@ export function RoleToggle({ role, setRole }: { role: "renter" | "landlord"; set
   );
 }
 
-export function Input({ icon: Icon, ...p }: { icon: React.ComponentType<{ className?: string }>; type?: string; placeholder: string; value: string; onChange: (v: string) => void }) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border border-input bg-background px-3 py-2.5 transition-colors focus-within:border-primary">
-      <Icon className="h-4 w-4 text-muted-foreground" />
-      <input
-        type={p.type || "text"}
-        placeholder={p.placeholder}
-        value={p.value}
-        onChange={(e) => p.onChange(e.target.value)}
-        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-      />
-    </div>
-  );
+export function _refs() {
+  return [ShieldCheck, Check];
 }
-
-export function Divider() {
-  return (
-    <div className="my-6 flex items-center gap-3 text-xs text-muted-foreground">
-      <div className="h-px flex-1 bg-border" /> OR CONTINUE WITH <div className="h-px flex-1 bg-border" />
-    </div>
-  );
-}
-
-export function _refs() { return [ShieldCheck, Check]; } // keep imports tree-shakable

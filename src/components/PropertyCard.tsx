@@ -4,10 +4,18 @@ import { Heart, Star, MapPin, BedDouble } from "lucide-react";
 import { useApp } from "@/lib/app-context";
 import type { Listing } from "@/lib/mock-data";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import { Sparkles } from "lucide-react";
-
-export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?: number }) {
+export function PropertyCard({
+  listing,
+  index = 0,
+  bestMatch = false,
+}: {
+  listing: Listing;
+  index?: number;
+  bestMatch?: boolean;
+}) {
+  const { t } = useTranslation();
   const { favorites, toggleFavorite } = useApp();
   const fav = favorites.includes(listing.id);
   const [imgError, setImgError] = useState(false);
@@ -35,16 +43,16 @@ export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?:
               }`}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>
+            <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{t("propertyCard.noImage")}</div>
           )}
-          {listing.badge === "Recommended" && listing.available && (
-            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-soft ring-1 ring-primary/30">
-              <Sparkles className="h-3 w-3" /> Recommended
+          {bestMatch && listing.available && (
+            <span className="absolute left-3 top-3 rounded-md border border-brand-cyan/35 bg-background/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-cyan shadow-sm backdrop-blur-sm">
+              {t("propertyCard.bestMatch")}
             </span>
           )}
           {!listing.available && (
             <span className="absolute right-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-[11px] font-semibold text-background backdrop-blur">
-              Not Available
+              {t("propertyCard.notAvailable")}
             </span>
           )}
           <button
@@ -53,7 +61,7 @@ export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?:
               toggleFavorite(listing.id);
             }}
             className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 shadow-soft backdrop-blur transition-transform hover:scale-110"
-            aria-label="Favorite"
+            aria-label={t("propertyCard.favorite")}
           >
             <Heart className={`h-4 w-4 ${fav ? "fill-destructive text-destructive" : "text-foreground"}`} />
           </button>
@@ -73,12 +81,31 @@ export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?:
             <BedDouble className="h-3 w-3" />
             <span>{listing.roomType}</span>
           </div>
+          {listing.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {listing.amenities.slice(0, 3).map((a) => (
+                <span
+                  key={a}
+                  className="rounded-md border border-border/80 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                >
+                  {a}
+                </span>
+              ))}
+              {listing.amenities.length > 3 && (
+                <span className="self-center text-[10px] font-medium text-muted-foreground/90">
+                  +{listing.amenities.length - 3}
+                </span>
+              )}
+            </div>
+          )}
           <div className="flex items-baseline justify-between border-t border-border pt-3">
             <div>
               <span className="text-lg font-bold text-foreground">฿{listing.price.toLocaleString()}</span>
-              <span className="ml-1 text-xs text-muted-foreground">/ month</span>
+              <span className="ml-1 text-xs text-muted-foreground">{t("common.month")}</span>
             </div>
-            <span className="text-xs text-muted-foreground">{listing.reviews} reviews</span>
+            <span className="text-xs text-muted-foreground">
+              {listing.reviews} {t("common.reviews")}
+            </span>
           </div>
         </div>
       </Link>

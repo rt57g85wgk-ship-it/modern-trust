@@ -1,3 +1,4 @@
+import "@/lib/i18n";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -7,6 +8,8 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { GoogleOAuthProvider } from "@react-oauth/google";
+import { useTranslation } from "react-i18next";
 
 import appCss from "../styles.css?url";
 import { AppProvider } from "@/lib/app-context";
@@ -14,20 +17,21 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ChatWidget } from "@/components/ChatWidget";
 
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
+
 function NotFoundComponent() {
+  const { t } = useTranslation();
   return (
     <div className="flex min-h-[70vh] items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-brand-gradient">404</h1>
-        <h2 className="mt-4 text-xl font-semibold">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          This listing or page doesn't exist or has been removed.
-        </p>
+        <h2 className="mt-4 text-xl font-semibold">{t("notFound.title")}</h2>
+        <p className="mt-2 text-sm text-muted-foreground">{t("notFound.desc")}</p>
         <Link
           to="/"
           className="mt-6 inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
-          Back to Discover
+          {t("notFound.cta")}
         </Link>
       </div>
     </div>
@@ -43,7 +47,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <h1 className="text-xl font-semibold">Something went wrong</h1>
         <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
         <button
-          onClick={() => { router.invalidate(); reset(); }}
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
           className="mt-6 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
         >
           Try again
@@ -85,7 +92,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <head><HeadContent /></head>
+      <head>
+        <HeadContent />
+      </head>
       <body>
         {children}
         <Scripts />
@@ -94,18 +103,32 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+function AppLayout() {
+  return (
+    <AppProvider>
+      <div className="flex min-h-screen flex-col">
+        <Navbar />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+        <ChatWidget />
+      </div>
+    </AppProvider>
+  );
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AppProvider>
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
-          <main className="flex-1"><Outlet /></main>
-          <Footer />
-          <ChatWidget />
-        </div>
-      </AppProvider>
+      {googleClientId ? (
+        <GoogleOAuthProvider clientId={googleClientId}>
+          <AppLayout />
+        </GoogleOAuthProvider>
+      ) : (
+        <AppLayout />
+      )}
     </QueryClientProvider>
   );
 }
