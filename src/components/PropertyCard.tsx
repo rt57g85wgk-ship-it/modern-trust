@@ -18,9 +18,11 @@ export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?:
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className="group overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-card"
+      className={`group overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-card ${
+        !listing.available ? "opacity-60 grayscale-[0.2]" : ""
+      }`}
     >
-      <Link to="/property/$id" params={{ id: listing.id }} className="block">
+      <Link to="/property/$id" params={{ id: listing.id }} className="block" aria-disabled={!listing.available}>
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {!imgError ? (
             <img
@@ -28,19 +30,21 @@ export function PropertyCard({ listing, index = 0 }: { listing: Listing; index?:
               alt={listing.title}
               loading="lazy"
               onError={() => setImgError(true)}
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+              className={`h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                !listing.available ? "saturate-50" : ""
+              }`}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground">No image</div>
           )}
-          {listing.badge && (
-            <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeStyles[listing.badge]}`}>
-              {listing.badge}
+          {listing.badge === "Recommended" && listing.available && (
+            <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-soft ring-1 ring-primary/30">
+              <Sparkles className="h-3 w-3" /> Recommended
             </span>
           )}
           {!listing.available && (
-            <span className="absolute right-3 top-3 rounded-full bg-foreground/80 px-2.5 py-1 text-[11px] font-semibold text-background">
-              Unavailable
+            <span className="absolute right-3 top-3 rounded-full bg-foreground/85 px-2.5 py-1 text-[11px] font-semibold text-background backdrop-blur">
+              Not Available
             </span>
           )}
           <button
