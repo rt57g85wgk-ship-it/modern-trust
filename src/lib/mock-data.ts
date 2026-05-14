@@ -51,7 +51,7 @@ export const listings: Listing[] = [
     beds: 1, baths: 1, sqm: 28,
     rating: 4.8, reviews: 96,
     available: true,
-    badge: "Featured",
+    available: true,
     image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
     gallery: [
       "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80",
