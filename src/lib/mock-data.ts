@@ -10,7 +10,7 @@ export type Listing = {
   rating: number;
   reviews: number;
   available: boolean;
-  badge?: "Recommended" | "Featured" | "Top Pick";
+  badge?: "Recommended";
   image: string;
   gallery: string[];
   amenities: string[];
