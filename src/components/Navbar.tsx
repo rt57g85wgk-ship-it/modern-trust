@@ -53,7 +53,7 @@ export function Navbar() {
         {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
         <span className="flex-1">{theme === "light" ? t("nav.darkMode") : t("nav.lightMode")}</span>
       </DropdownMenuItem>
-      {user && (
+      {user ? (
         <>
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
@@ -63,6 +63,20 @@ export function Navbar() {
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => logout()} className="gap-2 text-destructive focus:text-destructive">
             <LogOut className="h-4 w-4" /> {t("nav.signOut")}
+          </DropdownMenuItem>
+        </>
+      ) : (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link to="/login" className="gap-2">
+              <LogIn className="h-4 w-4" /> {t("nav.login")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/register" className="gap-2">
+              <UserPlus className="h-4 w-4" /> {t("nav.createAccount")}
+            </Link>
           </DropdownMenuItem>
         </>
       )}
