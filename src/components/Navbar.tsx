@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard } from "lucide-react";
+import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard, LogIn, UserPlus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/app-context";
