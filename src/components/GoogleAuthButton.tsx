@@ -56,13 +56,34 @@ function GoogleAuthButtonOAuth({ role }: { role: Role }) {
 
 export function GoogleAuthButton({ role }: { role: Role }) {
   const { t } = useTranslation();
+  const { login } = useApp();
+  const nav = useNavigate();
+  const [pending, setPending] = useState(false);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim();
 
   if (!clientId) {
+    const handleSimulated = async () => {
+      setPending(true);
+      // simulate Google auth flow
+      await new Promise((r) => setTimeout(r, 900));
+      const demoEmail = role === "landlord" ? "host.demo@gmail.com" : "renter.demo@gmail.com";
+      const demoName = role === "landlord" ? "Demo Host" : "Demo Renter";
+      login({ name: demoName, email: demoEmail, role });
+      toast.success(t("auth.welcomeBack", { name: demoName }));
+      await new Promise((r) => setTimeout(r, 250));
+      nav({ to: "/dashboard" });
+    };
+
     return (
-      <Button type="button" size="lg" className="w-full gap-2" disabled title={t("auth.errors.missingClientId")}>
+      <Button
+        type="button"
+        size="lg"
+        className="w-full gap-2"
+        disabled={pending}
+        onClick={handleSimulated}
+      >
         <Chrome className="h-4 w-4" />
-        {t("auth.continueGoogle")}
+        {pending ? t("auth.signingIn") : t("auth.continueGoogle")}
       </Button>
     );
   }
