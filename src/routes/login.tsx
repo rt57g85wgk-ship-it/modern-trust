@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-context";
 import { Logo } from "@/components/Logo";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { EmailPasswordForm, AuthDivider } from "@/components/EmailPasswordForm";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -58,9 +59,11 @@ function LoginPage() {
 
           <RoleToggle role={role} setRole={setRole} />
 
-          <div className="mt-8">
-            <GoogleAuthButton role={role} />
-          </div>
+          <EmailPasswordForm role={role} mode="signin" />
+
+          <AuthDivider />
+
+          <GoogleAuthButton role={role} />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {t("auth.noAccount")}{" "}
