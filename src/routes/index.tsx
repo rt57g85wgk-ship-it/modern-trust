@@ -119,7 +119,14 @@ function Landing() {
                   <option>{t("landing.room2br")}</option>
                 </select>
               </Field>
-              <Button size="lg" className="h-full gap-2 px-6">
+              <Button
+                size="lg"
+                className="h-full gap-2 px-6"
+                onClick={() => {
+                  const el = document.getElementById("recommended");
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              >
                 <Search className="h-4 w-4" /> <span className="hidden sm:inline">{t("landing.findRoom")}</span>
               </Button>
             </div>
@@ -141,7 +148,7 @@ function Landing() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8" id="features">
+      <section id="recommended" className="scroll-mt-20 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
