@@ -8,6 +8,7 @@ import { useApp } from "@/lib/app-context";
 import { Logo } from "@/components/Logo";
 import { RoleToggle } from "./login";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
+import { EmailPasswordForm, AuthDivider } from "@/components/EmailPasswordForm";
 
 export const Route = createFileRoute("/register")({
   component: RegisterPage,
@@ -33,7 +34,9 @@ function RegisterPage() {
 
           <RoleToggle role={role} setRole={setRole} />
 
-          <ul className="mt-6 space-y-1.5 text-xs text-muted-foreground">
+          <EmailPasswordForm role={role} mode="signup" />
+
+          <ul className="mt-5 space-y-1.5 text-xs text-muted-foreground">
             <li className="flex items-center gap-1.5">
               <Check className="h-3 w-3 text-success" /> {t("auth.registerBullet1")}
             </li>
@@ -45,9 +48,9 @@ function RegisterPage() {
             </li>
           </ul>
 
-          <div className="mt-6">
-            <GoogleAuthButton role={role} />
-          </div>
+          <AuthDivider />
+
+          <GoogleAuthButton role={role} />
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
             {t("auth.haveAccount")}{" "}
