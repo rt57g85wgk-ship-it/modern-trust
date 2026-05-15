@@ -8,7 +8,9 @@
     "darkMode": "โหมดมืด",
     "lightMode": "โหมดสว่าง",
     "dashboard": "แดชบอร์ด",
-    "signOut": "ออกจากระบบ"
+    "signOut": "ออกจากระบบ",
+    "login": "เข้าสู่ระบบ",
+    "createAccount": "สร้างบัญชี"
   },
   "common": {
     "cancel": "ยกเลิก",
