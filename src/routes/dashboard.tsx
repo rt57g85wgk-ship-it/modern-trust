@@ -118,47 +118,37 @@ function StatCard({ icon: Icon, label, value, trend, color = "primary" }: { icon
   );
 }
 
-function RenterView({ favorites }: { favorites: string[] }) {
+function RenterView({ favorites, verified, onVerify }: { favorites: string[]; verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   const saved = listings.filter((l) => favorites.includes(l.id));
-  const myBookings = bookings.map((b) => ({ ...b, listing: listings.find((l) => l.id === b.listingId)! }));
 
   return (
     <div className="mt-8 space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Heart} label={t("dashboard.savedListings")} value={String(saved.length)} color="primary" />
-        <StatCard icon={Calendar} label={t("dashboard.activeBookings")} value="2" trend="+1" color="success" />
         <StatCard icon={Eye} label={t("dashboard.recentlyViewed")} value="14" color="cyan" />
-        <StatCard icon={ShieldCheck} label={t("dashboard.trustScore")} value="98%" color="primary" />
+        <StatCard icon={ShieldCheck} label={t("dashboard.trustScore")} value={verified ? "98%" : "—"} color="primary" />
+        <StatCard icon={BadgeCheck} label={t("dashboard.verification")} value={verified ? t("dashboard.verified") : t("dashboard.unverified")} color={verified ? "success" : "primary"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">{t("dashboard.myBookings")}</h2>
-            <span className="text-xs text-muted-foreground">{t("dashboard.bookingsTotal", { count: myBookings.length })}</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {myBookings.map((b) => (
-              <Link key={b.id} to="/property/$id" params={{ id: b.listingId }}
-                className="flex items-center gap-4 rounded-xl border border-border p-3 transition-colors hover:bg-muted/40">
-                <img src={b.listing.image} alt="" className="h-16 w-20 rounded-lg object-cover" />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium">{b.listing.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {b.checkIn} → {b.checkOut} · ฿{b.total.toLocaleString()}
-                  </p>
-                </div>
-                <StatusPill status={b.status as "confirmed" | "pending" | "cancelled"} />
-              </Link>
-            ))}
-          </div>
+          <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-semibold">{t("dashboard.profile")}</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <Row label={t("dashboard.verification")} value={<span className="flex items-center gap-1 text-success"><Check className="h-3 w-3" /> {t("dashboard.verified")}</span>} />
+            <Row
+              label={t("dashboard.verification")}
+              value={
+                verified ? (
+                  <span className="flex items-center gap-1 text-success"><BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}</span>
+                ) : (
+                  <span className="text-muted-foreground">{t("dashboard.unverified")}</span>
+                )
+              }
+            />
             <Row label={t("dashboard.memberSince")} value="2026" />
             <Row label={t("dashboard.bookings")} value="3" />
             <Row label={t("dashboard.reviewsLeft")} value="2" />
@@ -194,6 +184,46 @@ function RenterView({ favorites }: { favorites: string[] }) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function VerificationPanel({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleFile = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    onVerify();
+    toast.success(t("dashboard.verifySuccess"));
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
+        <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
+        {verified && (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+            <Check className="h-3 w-3" /> {t("dashboard.verified")}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
+      </p>
+      {!verified && (
+        <>
+          <Button className="mt-4 gap-2" onClick={() => inputRef.current?.click()}>
+            <Upload className="h-4 w-4" /> {t("dashboard.uploadId")}
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={(e) => { handleFile(e.target.files); e.target.value = ""; }}
+          />
+        </>
+      )}
     </div>
   );
 }
