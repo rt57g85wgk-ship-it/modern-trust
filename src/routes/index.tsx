@@ -121,13 +121,13 @@ function Landing() {
               </Field>
               <Button
                 size="lg"
-                className="h-full gap-2 px-6"
+                className="h-12 w-full gap-2 px-6 text-base font-semibold md:h-full md:w-auto"
                 onClick={() => {
                   const el = document.getElementById("recommended");
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
               >
-                <Search className="h-4 w-4" /> <span className="hidden sm:inline">{t("landing.findRoom")}</span>
+                <Search className="h-5 w-5" /> {t("landing.findRoom")}
               </Button>
             </div>
           </motion.div>
