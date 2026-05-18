@@ -764,16 +764,6 @@ function PromoteToggle({
   );
 }
 
-function StatusPill({ status }: { status: "confirmed" | "pending" | "cancelled" }) {
-  const { t } = useTranslation();
-  const map = {
-    confirmed: { c: "bg-success/10 text-success", i: Check, l: t("dashboard.statusConfirmed") },
-    pending: { c: "bg-warning/15 text-warning", i: Clock, l: t("dashboard.statusPending") },
-    cancelled: { c: "bg-destructive/10 text-destructive", i: X, l: t("dashboard.statusCancelled") },
-  } as const;
-  const { c, i: I, l } = map[status];
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${c}`}><I className="h-3 w-3" /> {l}</span>;
-}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
