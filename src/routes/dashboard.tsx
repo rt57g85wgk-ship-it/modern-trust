@@ -62,7 +62,15 @@ function Dashboard() {
         <div>
           <p className="text-sm text-muted-foreground">{t("dashboard.welcome")}</p>
           <h1 className="text-2xl font-bold capitalize sm:text-3xl flex items-center gap-2">
-            {user.name} <ShieldCheck className="h-5 w-5 text-primary" />
+            {user.name}
+            {user.verified && (
+              <span
+                title={t("dashboard.verified")}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              >
+                <BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -84,7 +92,7 @@ function Dashboard() {
       </div>
 
       <motion.div key={user.role} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {user.role === "renter" ? <RenterView favorites={favorites} /> : <LandlordView />}
+        {user.role === "renter" ? <RenterView favorites={favorites} verified={!!user.verified} onVerify={verifyIdentity} /> : <LandlordView verified={!!user.verified} onVerify={verifyIdentity} />}
       </motion.div>
     </div>
   );
