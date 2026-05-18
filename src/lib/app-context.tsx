@@ -14,6 +14,7 @@ type Ctx = {
   toggleTheme: () => void;
   toggleLang: () => void;
   switchRole: () => void;
+  verifyIdentity: () => void;
 };
 
 const AppContext = createContext<Ctx | null>(null);
