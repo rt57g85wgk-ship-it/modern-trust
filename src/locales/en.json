@@ -131,6 +131,14 @@
     }
   },
   "dashboard": {
+    "statusAvailable": "Available",
+    "statusUnavailable": "Unavailable",
+    "unverified": "Unverified",
+    "idVerification": "Identity verification",
+    "verifyDesc": "Upload a government-issued ID to earn a verified badge and unlock premium trust signals across your profile.",
+    "verifyDoneDesc": "Your identity has been verified. The verified badge is now visible on your profile.",
+    "uploadId": "Upload government ID",
+    "verifySuccess": "ID received — your account is now verified.",
     "welcome": "Welcome back,",
     "discover": "Discover",
     "roleView": "{{role}} view",
