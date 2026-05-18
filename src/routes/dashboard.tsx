@@ -359,13 +359,21 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   onPromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: true } : x)))}
                   onUnpromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: false } : x)))}
                 />
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: !x.available } : x))}
-                  className="gap-1.5"
+                <Select
+                  value={u.available ? "available" : "unavailable"}
+                  onValueChange={(v) =>
+                    setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: v === "available" } : x))
+                  }
                 >
-                  {u.available ? <><EyeOff className="h-3.5 w-3.5" /> {t("dashboard.unlist")}</> : <><Eye className="h-3.5 w-3.5" /> {t("dashboard.relist")}</>}
-                </Button>
+                  <SelectTrigger className="h-9 w-[150px] gap-1.5 text-xs font-medium">
+                    <span className={`inline-block h-2 w-2 rounded-full ${u.available ? "bg-success" : "bg-muted-foreground"}`} />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">{t("dashboard.statusAvailable")}</SelectItem>
+                    <SelectItem value="unavailable">{t("dashboard.statusUnavailable")}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setEditing(u)} aria-label={t("common.edit")}>
                   <Edit className="h-4 w-4" />
                 </Button>
