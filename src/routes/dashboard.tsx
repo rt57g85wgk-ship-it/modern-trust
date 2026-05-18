@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import {
   ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, EyeOff, Sparkles, Edit, Trash2, Repeat, Check, Clock, X, Compass, Upload,
+  DollarSign, Eye, Sparkles, Edit, Trash2, Repeat, Check, Clock, X, Compass, Upload, BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
