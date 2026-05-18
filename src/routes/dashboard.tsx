@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import {
   ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, Sparkles, Edit, Trash2, Repeat, Check, Clock, X, Compass, Upload, BadgeCheck,
+  DollarSign, Eye, Sparkles, Edit, Trash2, Repeat, Check, X, Compass, Upload, BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useApp } from "@/lib/app-context";
-import { listings, bookings } from "@/lib/mock-data";
+import { listings } from "@/lib/mock-data";
 import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
 import { AmenitiesPicker } from "@/components/AmenitiesPicker";
 import {
