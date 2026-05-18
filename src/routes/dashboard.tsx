@@ -393,21 +393,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-semibold">{t("dashboard.bookingRequests")}</h2>
-          <div className="mt-4 space-y-3">
-            {bookings.map((b) => {
-              const l = listings.find((x) => x.id === b.listingId)!;
-              return (
-                <div key={b.id} className="flex items-center justify-between rounded-xl border border-border p-3">
-                  <div>
-                    <p className="text-sm font-medium">{l.title}</p>
-                    <p className="text-xs text-muted-foreground">{b.checkIn} · ฿{b.total.toLocaleString()}</p>
-                  </div>
-                  <StatusPill status={b.status as "confirmed" | "pending" | "cancelled"} />
-                </div>
-              );
-            })}
-          </div>
+          <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
@@ -424,6 +410,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
           </ul>
         </section>
       </div>
+
 
       <ListingFormDialog
         open={creating || !!editing}
