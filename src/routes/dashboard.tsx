@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import {
   ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, EyeOff, Sparkles, Edit, Trash2, Repeat, Check, Clock, X, Compass, Upload,
+  DollarSign, Eye, Sparkles, Edit, Trash2, Repeat, Check, X, Compass, Upload, BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useApp } from "@/lib/app-context";
-import { listings, bookings } from "@/lib/mock-data";
+import { listings } from "@/lib/mock-data";
 import { PromoteModal, type PromotePackage } from "@/components/PromoteModal";
 import { AmenitiesPicker } from "@/components/AmenitiesPicker";
 import {
@@ -34,7 +34,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const { t } = useTranslation();
-  const { user, switchRole, favorites } = useApp();
+  const { user, switchRole, favorites, verifyIdentity } = useApp();
   const nav = useNavigate();
 
   useEffect(() => {
@@ -62,7 +62,15 @@ function Dashboard() {
         <div>
           <p className="text-sm text-muted-foreground">{t("dashboard.welcome")}</p>
           <h1 className="text-2xl font-bold capitalize sm:text-3xl flex items-center gap-2">
-            {user.name} <ShieldCheck className="h-5 w-5 text-primary" />
+            {user.name}
+            {user.verified && (
+              <span
+                title={t("dashboard.verified")}
+                className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+              >
+                <BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -84,7 +92,7 @@ function Dashboard() {
       </div>
 
       <motion.div key={user.role} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {user.role === "renter" ? <RenterView favorites={favorites} /> : <LandlordView />}
+        {user.role === "renter" ? <RenterView favorites={favorites} verified={!!user.verified} onVerify={verifyIdentity} /> : <LandlordView verified={!!user.verified} onVerify={verifyIdentity} />}
       </motion.div>
     </div>
   );
@@ -110,47 +118,37 @@ function StatCard({ icon: Icon, label, value, trend, color = "primary" }: { icon
   );
 }
 
-function RenterView({ favorites }: { favorites: string[] }) {
+function RenterView({ favorites, verified, onVerify }: { favorites: string[]; verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   const saved = listings.filter((l) => favorites.includes(l.id));
-  const myBookings = bookings.map((b) => ({ ...b, listing: listings.find((l) => l.id === b.listingId)! }));
 
   return (
     <div className="mt-8 space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard icon={Heart} label={t("dashboard.savedListings")} value={String(saved.length)} color="primary" />
-        <StatCard icon={Calendar} label={t("dashboard.activeBookings")} value="2" trend="+1" color="success" />
         <StatCard icon={Eye} label={t("dashboard.recentlyViewed")} value="14" color="cyan" />
-        <StatCard icon={ShieldCheck} label={t("dashboard.trustScore")} value="98%" color="primary" />
+        <StatCard icon={ShieldCheck} label={t("dashboard.trustScore")} value={verified ? "98%" : "—"} color="primary" />
+        <StatCard icon={BadgeCheck} label={t("dashboard.verification")} value={verified ? t("dashboard.verified") : t("dashboard.unverified")} color={verified ? "success" : "primary"} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">{t("dashboard.myBookings")}</h2>
-            <span className="text-xs text-muted-foreground">{t("dashboard.bookingsTotal", { count: myBookings.length })}</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {myBookings.map((b) => (
-              <Link key={b.id} to="/property/$id" params={{ id: b.listingId }}
-                className="flex items-center gap-4 rounded-xl border border-border p-3 transition-colors hover:bg-muted/40">
-                <img src={b.listing.image} alt="" className="h-16 w-20 rounded-lg object-cover" />
-                <div className="flex-1 min-w-0">
-                  <p className="truncate font-medium">{b.listing.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {b.checkIn} → {b.checkOut} · ฿{b.total.toLocaleString()}
-                  </p>
-                </div>
-                <StatusPill status={b.status as "confirmed" | "pending" | "cancelled"} />
-              </Link>
-            ))}
-          </div>
+          <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-semibold">{t("dashboard.profile")}</h2>
           <div className="mt-4 space-y-3 text-sm">
-            <Row label={t("dashboard.verification")} value={<span className="flex items-center gap-1 text-success"><Check className="h-3 w-3" /> {t("dashboard.verified")}</span>} />
+            <Row
+              label={t("dashboard.verification")}
+              value={
+                verified ? (
+                  <span className="flex items-center gap-1 text-success"><BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}</span>
+                ) : (
+                  <span className="text-muted-foreground">{t("dashboard.unverified")}</span>
+                )
+              }
+            />
             <Row label={t("dashboard.memberSince")} value="2026" />
             <Row label={t("dashboard.bookings")} value="3" />
             <Row label={t("dashboard.reviewsLeft")} value="2" />
@@ -186,6 +184,46 @@ function RenterView({ favorites }: { favorites: string[] }) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function VerificationPanel({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
+  const { t } = useTranslation();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleFile = (files: FileList | null) => {
+    if (!files || !files.length) return;
+    onVerify();
+    toast.success(t("dashboard.verifySuccess"));
+  };
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
+        <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
+        {verified && (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+            <Check className="h-3 w-3" /> {t("dashboard.verified")}
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
+      </p>
+      {!verified && (
+        <>
+          <Button className="mt-4 gap-2" onClick={() => inputRef.current?.click()}>
+            <Upload className="h-4 w-4" /> {t("dashboard.uploadId")}
+          </Button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={(e) => { handleFile(e.target.files); e.target.value = ""; }}
+          />
+        </>
+      )}
     </div>
   );
 }
@@ -239,7 +277,7 @@ const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
   };
 });
 
-function LandlordView() {
+function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   const [units, setUnits] = useState<Unit[]>(seedUnits);
   const [editing, setEditing] = useState<Unit | null>(null);
@@ -321,13 +359,21 @@ function LandlordView() {
                   onPromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: true } : x)))}
                   onUnpromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: false } : x)))}
                 />
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: !x.available } : x))}
-                  className="gap-1.5"
+                <Select
+                  value={u.available ? "available" : "unavailable"}
+                  onValueChange={(v) =>
+                    setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: v === "available" } : x))
+                  }
                 >
-                  {u.available ? <><EyeOff className="h-3.5 w-3.5" /> {t("dashboard.unlist")}</> : <><Eye className="h-3.5 w-3.5" /> {t("dashboard.relist")}</>}
-                </Button>
+                  <SelectTrigger className="h-9 w-[150px] gap-1.5 text-xs font-medium">
+                    <span className={`inline-block h-2 w-2 rounded-full ${u.available ? "bg-success" : "bg-muted-foreground"}`} />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">{t("dashboard.statusAvailable")}</SelectItem>
+                    <SelectItem value="unavailable">{t("dashboard.statusUnavailable")}</SelectItem>
+                  </SelectContent>
+                </Select>
                 <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setEditing(u)} aria-label={t("common.edit")}>
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -347,21 +393,7 @@ function LandlordView() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-semibold">{t("dashboard.bookingRequests")}</h2>
-          <div className="mt-4 space-y-3">
-            {bookings.map((b) => {
-              const l = listings.find((x) => x.id === b.listingId)!;
-              return (
-                <div key={b.id} className="flex items-center justify-between rounded-xl border border-border p-3">
-                  <div>
-                    <p className="text-sm font-medium">{l.title}</p>
-                    <p className="text-xs text-muted-foreground">{b.checkIn} · ฿{b.total.toLocaleString()}</p>
-                  </div>
-                  <StatusPill status={b.status as "confirmed" | "pending" | "cancelled"} />
-                </div>
-              );
-            })}
-          </div>
+          <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
@@ -378,6 +410,7 @@ function LandlordView() {
           </ul>
         </section>
       </div>
+
 
       <ListingFormDialog
         open={creating || !!editing}
@@ -731,16 +764,6 @@ function PromoteToggle({
   );
 }
 
-function StatusPill({ status }: { status: "confirmed" | "pending" | "cancelled" }) {
-  const { t } = useTranslation();
-  const map = {
-    confirmed: { c: "bg-success/10 text-success", i: Check, l: t("dashboard.statusConfirmed") },
-    pending: { c: "bg-warning/15 text-warning", i: Clock, l: t("dashboard.statusPending") },
-    cancelled: { c: "bg-destructive/10 text-destructive", i: X, l: t("dashboard.statusCancelled") },
-  } as const;
-  const { c, i: I, l } = map[status];
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium ${c}`}><I className="h-3 w-3" /> {l}</span>;
-}
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import i18n from "@/lib/i18n";
 
 type Role = "renter" | "landlord";
-type User = { name: string; email: string; role: Role } | null;
+type User = { name: string; email: string; role: Role; verified?: boolean } | null;
 
 type Ctx = {
   user: User;
@@ -14,6 +14,7 @@ type Ctx = {
   toggleTheme: () => void;
   toggleLang: () => void;
   switchRole: () => void;
+  verifyIdentity: () => void;
 };
 
 const AppContext = createContext<Ctx | null>(null);
@@ -68,9 +69,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(next);
     localStorage.setItem("mt_user", JSON.stringify(next));
   };
+  const verifyIdentity = () => {
+    if (!user) return;
+    const next: User = { ...user, verified: true };
+    setUser(next);
+    localStorage.setItem("mt_user", JSON.stringify(next));
+  };
 
   return (
-    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole }}>
+    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole, verifyIdentity }}>
+
       {children}
     </AppContext.Provider>
   );
