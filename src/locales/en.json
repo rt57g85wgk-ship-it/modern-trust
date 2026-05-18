@@ -10,7 +10,8 @@
     "dashboard": "Dashboard",
     "signOut": "Sign out",
     "login": "Login",
-    "createAccount": "Create Account"
+    "createAccount": "Create Account",
+    "loginOrSignUp": "Log in or sign up"
   },
   "common": {
     "cancel": "Cancel",

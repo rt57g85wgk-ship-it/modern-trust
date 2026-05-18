@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard, LogIn, UserPlus } from "lucide-react";
+import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard, LogIn } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/app-context";
@@ -70,12 +70,7 @@ export function Navbar() {
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to="/login" className="gap-2">
-              <LogIn className="h-4 w-4" /> {t("nav.login")}
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/register" className="gap-2">
-              <UserPlus className="h-4 w-4" /> {t("nav.createAccount")}
+              <LogIn className="h-4 w-4" /> {t("nav.loginOrSignUp")}
             </Link>
           </DropdownMenuItem>
         </>
@@ -182,20 +177,15 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LogIn className="h-4 w-4" /> {t("nav.login")}
-                  </Link>
-                  <Link to="/register" onClick={() => setMobileOpen(false)}>
-                    <Button size="lg" className="mt-1 w-full gap-2">
-                      <UserPlus className="h-4 w-4" /> {t("nav.createAccount")}
-                    </Button>
-                  </Link>
-                </>
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <LogIn className="h-4 w-4" /> {t("nav.loginOrSignUp")}
+                </Link>
+              </>
               )}
             </div>
           </motion.div>
