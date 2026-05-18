@@ -34,7 +34,7 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const { t } = useTranslation();
-  const { user, switchRole, favorites } = useApp();
+  const { user, switchRole, favorites, verifyIdentity } = useApp();
   const nav = useNavigate();
 
   useEffect(() => {
