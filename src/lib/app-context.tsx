@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import i18n from "@/lib/i18n";
 
 type Role = "renter" | "landlord";
-type User = { name: string; email: string; role: Role } | null;
+type User = { name: string; email: string; role: Role; verified?: boolean } | null;
 
 type Ctx = {
   user: User;
