@@ -92,7 +92,7 @@ export function Navbar() {
             </Link>
           )}
           {!user && (
-            <Link to="/register">
+            <Link to="/login">
               <Button size="sm">{t("nav.getStarted")}</Button>
             </Link>
           )}
