@@ -70,12 +70,7 @@ export function Navbar() {
           <DropdownMenuSeparator />
           <DropdownMenuItem asChild>
             <Link to="/login" className="gap-2">
-              <LogIn className="h-4 w-4" /> {t("nav.login")}
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/register" className="gap-2">
-              <UserPlus className="h-4 w-4" /> {t("nav.createAccount")}
+              <LogIn className="h-4 w-4" /> {t("nav.loginOrSignUp")}
             </Link>
           </DropdownMenuItem>
         </>
