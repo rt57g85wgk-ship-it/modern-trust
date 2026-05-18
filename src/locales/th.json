@@ -10,7 +10,8 @@
     "dashboard": "แดชบอร์ด",
     "signOut": "ออกจากระบบ",
     "login": "เข้าสู่ระบบ",
-    "createAccount": "สร้างบัญชี"
+    "createAccount": "สร้างบัญชี",
+    "loginOrSignUp": "เข้าสู่ระบบหรือสมัครสมาชิก"
   },
   "common": {
     "cancel": "ยกเลิก",
