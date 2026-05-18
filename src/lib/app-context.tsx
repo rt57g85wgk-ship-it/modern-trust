@@ -69,9 +69,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(next);
     localStorage.setItem("mt_user", JSON.stringify(next));
   };
+  const verifyIdentity = () => {
+    if (!user) return;
+    const next: User = { ...user, verified: true };
+    setUser(next);
+    localStorage.setItem("mt_user", JSON.stringify(next));
+  };
 
   return (
-    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole }}>
+    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole, verifyIdentity }}>
+
       {children}
     </AppContext.Provider>
   );
