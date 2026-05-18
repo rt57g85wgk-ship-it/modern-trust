@@ -177,20 +177,15 @@ export function Navbar() {
                   </button>
                 </>
               ) : (
-                <>
-                  <Link
-                    to="/login"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LogIn className="h-4 w-4" /> {t("nav.login")}
-                  </Link>
-                  <Link to="/register" onClick={() => setMobileOpen(false)}>
-                    <Button size="lg" className="mt-1 w-full gap-2">
-                      <UserPlus className="h-4 w-4" /> {t("nav.createAccount")}
-                    </Button>
-                  </Link>
-                </>
+              <>
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                  <LogIn className="h-4 w-4" /> {t("nav.loginOrSignUp")}
+                </Link>
+              </>
               )}
             </div>
           </motion.div>
