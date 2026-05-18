@@ -277,7 +277,7 @@ const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
   };
 });
 
-function LandlordView() {
+function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   const [units, setUnits] = useState<Unit[]>(seedUnits);
   const [editing, setEditing] = useState<Unit | null>(null);
