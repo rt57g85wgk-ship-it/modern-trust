@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, MapPin, Calendar, Wallet, Home as HomeIcon, ShieldCheck, Sparkles, Zap, ArrowRight, Star } from "lucide-react";
+import { Search, MapPin, Wallet, Home as HomeIcon, ShieldCheck, Sparkles, Zap, ArrowRight, Star, ChevronDown, PawPrint, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listings } from "@/lib/mock-data";
 import { PropertyCard, PropertyCardSkeleton } from "@/components/PropertyCard";
