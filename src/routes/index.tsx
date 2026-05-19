@@ -22,17 +22,40 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const { t } = useTranslation();
-  const [q, setQ] = useState({ location: "", date: "", budget: "any", room: "any" });
+  const IN_UNIT_AMENITIES = ["Air Conditioning", "Wi-Fi", "Furnished", "Kitchen"] as const;
+  const BUILDING_AMENITIES = ["Gym", "Elevator", "Parking", "Laundry"] as const;
+
+  const [q, setQ] = useState({
+    location: "",
+    date: "",
+    budget: "any",
+    room: "any",
+    pet: false,
+    lease: "any" as "any" | "1y" | "under1y",
+    amenities: [] as string[],
+  });
+  const [showMore, setShowMore] = useState(false);
   const [loading] = useState(false);
+
+  const toggleAmenity = (a: string) =>
+    setQ((prev) => ({
+      ...prev,
+      amenities: prev.amenities.includes(a)
+        ? prev.amenities.filter((x) => x !== a)
+        : [...prev.amenities, a],
+    }));
 
   const filtered = useMemo(() => {
     return listings.filter((l) => {
+      if (!l.available) return false;
       if (q.location && !l.location.toLowerCase().includes(q.location.toLowerCase())) return false;
       if (q.room !== "any" && l.roomType !== q.room) return false;
       if (q.budget !== "any") {
         const [min, max] = q.budget.split("-").map(Number);
         if (l.price < min || (max && l.price > max)) return false;
       }
+      if (q.pet && !l.amenities.includes("Pet Friendly")) return false;
+      if (q.amenities.length > 0 && !q.amenities.every((a) => l.amenities.includes(a))) return false;
       return true;
     });
   }, [q]);
