@@ -198,10 +198,10 @@ function Landing() {
                       </div>
                       <div className="space-y-1.5">
                         {[
-                          { v: "any", label: t("landing.roomAny") },
                           { v: "Studio", label: t("landing.roomStudio") },
                           { v: "1 Bedroom", label: t("landing.room1br") },
                           { v: "2 Bedroom", label: t("landing.room2br") },
+                          { v: "3+ Bedroom", label: t("landing.room3br") },
                         ].map((opt) => (
                           <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
                             <input
