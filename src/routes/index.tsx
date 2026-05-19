@@ -236,9 +236,8 @@ function Landing() {
                       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <FileText className="h-3.5 w-3.5 text-primary" /> {t("landing.leaseTerm")}
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                         {[
-                          { v: "any", label: t("landing.leaseAny") },
                           { v: "1y", label: t("landing.lease1y") },
                           { v: "under1y", label: t("landing.leaseUnder1y") },
                         ].map((opt) => (
