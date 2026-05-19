@@ -22,8 +22,34 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const { t } = useTranslation();
-  const IN_UNIT_AMENITIES = ["Air Conditioning", "Wi-Fi", "Furnished", "Kitchen"] as const;
-  const BUILDING_AMENITIES = ["Gym", "Elevator", "Parking", "Laundry"] as const;
+  const IN_UNIT_AMENITIES: { key: string; label: string }[] = [
+    { key: "ac", label: t("landing.amAc") },
+    { key: "fan", label: t("landing.amFan") },
+    { key: "cableTv", label: t("landing.amCableTv") },
+    { key: "fridge", label: t("landing.amFridge") },
+    { key: "furniture", label: t("landing.amFurniture") },
+    { key: "waterHeater", label: t("landing.amWaterHeater") },
+    { key: "wifi", label: t("landing.amWifi") },
+    { key: "sofa", label: t("landing.amSofa") },
+    { key: "deskChair", label: t("landing.amDeskChair") },
+    { key: "stove", label: t("landing.amStove") },
+  ];
+  const BUILDING_AMENITIES: { key: string; label: string }[] = [
+    { key: "keycard", label: t("landing.amKeycard") },
+    { key: "fingerprint", label: t("landing.amFingerprint") },
+    { key: "security", label: t("landing.amSecurity") },
+    { key: "cctv", label: t("landing.amCctv") },
+    { key: "bikeParking", label: t("landing.amBikeParking") },
+    { key: "carParking", label: t("landing.amCarParking") },
+    { key: "pool", label: t("landing.amPool") },
+    { key: "fitness", label: t("landing.amFitness") },
+    { key: "laundryShop", label: t("landing.amLaundryShop") },
+    { key: "salon", label: t("landing.amSalon") },
+    { key: "elevator", label: t("landing.amElevator") },
+    { key: "shop", label: t("landing.amShop") },
+    { key: "restaurant", label: t("landing.amRestaurant") },
+    { key: "evCharge", label: t("landing.amEvCharge") },
+  ];
 
   const [q, setQ] = useState({
     location: "",
@@ -31,7 +57,7 @@ function Landing() {
     budget: "any",
     room: "any",
     pet: false,
-    lease: "any" as "any" | "1y" | "under1y",
+    lease: "" as "" | "1y" | "under1y",
     amenities: [] as string[],
   });
   const [showMore, setShowMore] = useState(false);
@@ -55,7 +81,6 @@ function Landing() {
         if (l.price < min || (max && l.price > max)) return false;
       }
       if (q.pet && !l.amenities.includes("Pet Friendly")) return false;
-      if (q.amenities.length > 0 && !q.amenities.every((a) => l.amenities.includes(a))) return false;
       return true;
     });
   }, [q]);
@@ -173,10 +198,10 @@ function Landing() {
                       </div>
                       <div className="space-y-1.5">
                         {[
-                          { v: "any", label: t("landing.roomAny") },
                           { v: "Studio", label: t("landing.roomStudio") },
                           { v: "1 Bedroom", label: t("landing.room1br") },
                           { v: "2 Bedroom", label: t("landing.room2br") },
+                          { v: "3+ Bedroom", label: t("landing.room3br") },
                         ].map((opt) => (
                           <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
                             <input
@@ -211,9 +236,8 @@ function Landing() {
                       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <FileText className="h-3.5 w-3.5 text-primary" /> {t("landing.leaseTerm")}
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                         {[
-                          { v: "any", label: t("landing.leaseAny") },
                           { v: "1y", label: t("landing.lease1y") },
                           { v: "under1y", label: t("landing.leaseUnder1y") },
                         ].map((opt) => (
@@ -239,14 +263,14 @@ function Landing() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                         {IN_UNIT_AMENITIES.map((a) => (
-                          <label key={a} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
                             <input
                               type="checkbox"
-                              checked={q.amenities.includes(a)}
-                              onChange={() => toggleAmenity(a)}
+                              checked={q.amenities.includes(a.key)}
+                              onChange={() => toggleAmenity(a.key)}
                               className="h-3.5 w-3.5 accent-primary"
                             />
-                            {a}
+                            {a.label}
                           </label>
                         ))}
                       </div>
@@ -257,14 +281,14 @@ function Landing() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                         {BUILDING_AMENITIES.map((a) => (
-                          <label key={a} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
                             <input
                               type="checkbox"
-                              checked={q.amenities.includes(a)}
-                              onChange={() => toggleAmenity(a)}
+                              checked={q.amenities.includes(a.key)}
+                              onChange={() => toggleAmenity(a.key)}
                               className="h-3.5 w-3.5 accent-primary"
                             />
-                            {a}
+                            {a.label}
                           </label>
                         ))}
                       </div>
