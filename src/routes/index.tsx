@@ -57,7 +57,7 @@ function Landing() {
     budget: "any",
     room: "any",
     pet: false,
-    lease: "any" as "any" | "1y" | "under1y",
+    lease: "" as "" | "1y" | "under1y",
     amenities: [] as string[],
   });
   const [showMore, setShowMore] = useState(false);
