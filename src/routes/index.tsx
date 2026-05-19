@@ -22,8 +22,34 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const { t } = useTranslation();
-  const IN_UNIT_AMENITIES = ["Air Conditioning", "Wi-Fi", "Furnished", "Kitchen"] as const;
-  const BUILDING_AMENITIES = ["Gym", "Elevator", "Parking", "Laundry"] as const;
+  const IN_UNIT_AMENITIES: { key: string; label: string }[] = [
+    { key: "ac", label: t("landing.amAc") },
+    { key: "fan", label: t("landing.amFan") },
+    { key: "cableTv", label: t("landing.amCableTv") },
+    { key: "fridge", label: t("landing.amFridge") },
+    { key: "furniture", label: t("landing.amFurniture") },
+    { key: "waterHeater", label: t("landing.amWaterHeater") },
+    { key: "wifi", label: t("landing.amWifi") },
+    { key: "sofa", label: t("landing.amSofa") },
+    { key: "deskChair", label: t("landing.amDeskChair") },
+    { key: "stove", label: t("landing.amStove") },
+  ];
+  const BUILDING_AMENITIES: { key: string; label: string }[] = [
+    { key: "keycard", label: t("landing.amKeycard") },
+    { key: "fingerprint", label: t("landing.amFingerprint") },
+    { key: "security", label: t("landing.amSecurity") },
+    { key: "cctv", label: t("landing.amCctv") },
+    { key: "bikeParking", label: t("landing.amBikeParking") },
+    { key: "carParking", label: t("landing.amCarParking") },
+    { key: "pool", label: t("landing.amPool") },
+    { key: "fitness", label: t("landing.amFitness") },
+    { key: "laundryShop", label: t("landing.amLaundryShop") },
+    { key: "salon", label: t("landing.amSalon") },
+    { key: "elevator", label: t("landing.amElevator") },
+    { key: "shop", label: t("landing.amShop") },
+    { key: "restaurant", label: t("landing.amRestaurant") },
+    { key: "evCharge", label: t("landing.amEvCharge") },
+  ];
 
   const [q, setQ] = useState({
     location: "",
