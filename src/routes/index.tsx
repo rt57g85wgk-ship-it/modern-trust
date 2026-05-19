@@ -81,7 +81,6 @@ function Landing() {
         if (l.price < min || (max && l.price > max)) return false;
       }
       if (q.pet && !l.amenities.includes("Pet Friendly")) return false;
-      if (q.amenities.length > 0 && !q.amenities.every((a) => l.amenities.includes(a))) return false;
       return true;
     });
   }, [q]);
