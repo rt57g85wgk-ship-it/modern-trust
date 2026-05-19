@@ -265,14 +265,14 @@ function Landing() {
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                         {IN_UNIT_AMENITIES.map((a) => (
-                          <label key={a} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
                             <input
                               type="checkbox"
-                              checked={q.amenities.includes(a)}
-                              onChange={() => toggleAmenity(a)}
+                              checked={q.amenities.includes(a.key)}
+                              onChange={() => toggleAmenity(a.key)}
                               className="h-3.5 w-3.5 accent-primary"
                             />
-                            {a}
+                            {a.label}
                           </label>
                         ))}
                       </div>
