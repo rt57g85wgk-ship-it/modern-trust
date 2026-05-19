@@ -100,21 +100,13 @@ function Landing() {
             transition={{ delay: 0.15 }}
             className="mx-auto mt-10 max-w-5xl rounded-2xl border border-border bg-card p-2 shadow-card sm:p-3"
           >
-            <div className="grid gap-2 md:grid-cols-[1.4fr_1fr_1fr_1fr_auto]">
+            <div className="grid gap-2 md:grid-cols-[1.4fr_1fr_1fr_auto]">
               <Field icon={<MapPin className="h-4 w-4" />} label={t("landing.searchLocation")}>
                 <input
                   value={q.location}
                   onChange={(e) => setQ({ ...q, location: e.target.value })}
                   placeholder={t("landing.searchPlaceholderLocation")}
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-              </Field>
-              <Field icon={<Calendar className="h-4 w-4" />} label={t("landing.searchMoveIn")}>
-                <input
-                  type="date"
-                  value={q.date}
-                  onChange={(e) => setQ({ ...q, date: e.target.value })}
-                  className="w-full bg-transparent text-sm outline-none"
                 />
               </Field>
               <Field icon={<Wallet className="h-4 w-4" />} label={t("landing.searchBudget")}>
@@ -130,7 +122,7 @@ function Landing() {
                   <option value="30000-99999">{t("landing.budget30plus")}</option>
                 </select>
               </Field>
-              <Field icon={<HomeIcon className="h-4 w-4" />} label={t("landing.searchRoomType")}>
+              <Field icon={<HomeIcon className="h-4 w-4" />} label={t("landing.searchPropertyType")}>
                 <select
                   value={q.room}
                   onChange={(e) => setQ({ ...q, room: e.target.value })}
@@ -153,6 +145,134 @@ function Landing() {
                 <Search className="h-5 w-5" /> {t("landing.findRoom")}
               </Button>
             </div>
+
+            <div className="mt-2 flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowMore((v) => !v)}
+                className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
+              >
+                {showMore ? t("landing.hideMoreOptions") : t("landing.moreOptions")}
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showMore ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+
+            <AnimatePresence initial={false}>
+              {showMore && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid gap-6 border-t border-border px-2 pb-2 pt-4 sm:px-3 md:grid-cols-3">
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <HomeIcon className="h-3.5 w-3.5 text-primary" /> {t("landing.roomLayout")}
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { v: "any", label: t("landing.roomAny") },
+                          { v: "Studio", label: t("landing.roomStudio") },
+                          { v: "1 Bedroom", label: t("landing.room1br") },
+                          { v: "2 Bedroom", label: t("landing.room2br") },
+                        ].map((opt) => (
+                          <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="radio"
+                              name="roomLayout"
+                              checked={q.room === opt.v}
+                              onChange={() => setQ({ ...q, room: opt.v })}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <PawPrint className="h-3.5 w-3.5 text-primary" /> {t("landing.petPolicy")}
+                      </div>
+                      <label className="flex cursor-pointer items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={q.pet}
+                          onChange={(e) => setQ({ ...q, pet: e.target.checked })}
+                          className="h-3.5 w-3.5 accent-primary"
+                        />
+                        {t("landing.petFriendlyOnly")}
+                      </label>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <FileText className="h-3.5 w-3.5 text-primary" /> {t("landing.leaseTerm")}
+                      </div>
+                      <div className="space-y-1.5">
+                        {[
+                          { v: "any", label: t("landing.leaseAny") },
+                          { v: "1y", label: t("landing.lease1y") },
+                          { v: "under1y", label: t("landing.leaseUnder1y") },
+                        ].map((opt) => (
+                          <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="radio"
+                              name="lease"
+                              checked={q.lease === opt.v}
+                              onChange={() => setQ({ ...q, lease: opt.v as typeof q.lease })}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-6 px-2 pb-3 pt-4 sm:px-3 md:grid-cols-2">
+                    <div>
+                      <div className="mb-2 inline-flex items-center rounded-md bg-success/10 px-2 py-1 text-xs font-semibold text-success">
+                        {t("landing.inUnitAmenities")}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {IN_UNIT_AMENITIES.map((a) => (
+                          <label key={a} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={q.amenities.includes(a)}
+                              onChange={() => toggleAmenity(a)}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                            {a}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="mb-2 inline-flex items-center rounded-md bg-success/10 px-2 py-1 text-xs font-semibold text-success">
+                        {t("landing.buildingAmenities")}
+                      </div>
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                        {BUILDING_AMENITIES.map((a) => (
+                          <label key={a} className="flex cursor-pointer items-center gap-2 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={q.amenities.includes(a)}
+                              onChange={() => toggleAmenity(a)}
+                              className="h-3.5 w-3.5 accent-primary"
+                            />
+                            {a}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           <div className="mx-auto mt-12 grid max-w-4xl grid-cols-2 gap-6 text-center sm:grid-cols-4">
