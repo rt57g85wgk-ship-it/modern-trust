@@ -2,15 +2,37 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import {
-  ShieldCheck, Bell, Settings, Heart, Calendar, Plus, TrendingUp, Home as HomeIcon,
-  DollarSign, Eye, Sparkles, Edit, Trash2, Repeat, Check, X, Compass, Upload, BadgeCheck,
+  ShieldCheck,
+  Bell,
+  Settings,
+  Heart,
+  Calendar,
+  Plus,
+  TrendingUp,
+  Home as HomeIcon,
+  DollarSign,
+  Eye,
+  Sparkles,
+  Edit,
+  Trash2,
+  Repeat,
+  Check,
+  X,
+  Compass,
+  Upload,
+  BadgeCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { useApp } from "@/lib/app-context";
 import { listings } from "@/lib/mock-data";
@@ -23,13 +45,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROPERTY_TYPE_OPTIONS, SIZE_UNITS, formatRoomSize, type SizeUnit } from "@/lib/property-form";
+import {
+  PROPERTY_TYPE_OPTIONS,
+  ROOM_TYPE_OPTIONS,
+  formatRoomSize,
+  type RoomTypeOption,
+  type SizeUnit,
+} from "@/lib/property-form";
+import { BUILDING_AMENITY_OPTIONS, IN_UNIT_AMENITY_OPTIONS } from "@/lib/amenities";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
-  head: () => ({ meta: [{ title: "Dashboard — Modern Trust" }, { name: "description", content: "Manage your rentals and bookings." }] }),
+  head: () => ({
+    meta: [
+      { title: "Dashboard — Modern Trust" },
+      { name: "description", content: "Manage your rentals and bookings." },
+    ],
+  }),
 });
 
 function Dashboard() {
@@ -50,7 +84,9 @@ function Dashboard() {
         <ShieldCheck className="mx-auto h-10 w-10 text-muted-foreground" />
         <h1 className="mt-4 text-xl font-semibold">{t("dashboard.authTitle")}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.authDesc")}</p>
-        <Link to="/login"><Button className="mt-6">{t("dashboard.signIn")}</Button></Link>
+        <Link to="/login">
+          <Button className="mt-6">{t("dashboard.signIn")}</Button>
+        </Link>
       </div>
     );
   }
@@ -80,25 +116,54 @@ function Dashboard() {
             </Button>
           </Link>
           <span className="rounded-full bg-muted px-3 py-1 text-xs font-medium capitalize">
-            {t("dashboard.roleView", { role: t(user.role === "renter" ? "dashboard.renter" : "dashboard.landlord") })}
+            {t("dashboard.roleView", {
+              role: t(user.role === "renter" ? "dashboard.renter" : "dashboard.landlord"),
+            })}
           </span>
           <Button variant="outline" size="sm" onClick={switchRole} className="gap-2">
             <Repeat className="h-4 w-4" />{" "}
-            {t("dashboard.switchTo", { role: t(user.role === "renter" ? "dashboard.landlord" : "dashboard.renter") })}
+            {t("dashboard.switchTo", {
+              role: t(user.role === "renter" ? "dashboard.landlord" : "dashboard.renter"),
+            })}
           </Button>
-          <Button variant="ghost" size="icon"><Bell className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon"><Settings className="h-4 w-4" /></Button>
+          <Button variant="ghost" size="icon">
+            <Bell className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <motion.div key={user.role} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-        {user.role === "renter" ? <RenterView favorites={favorites} verified={!!user.verified} onVerify={verifyIdentity} /> : <LandlordView verified={!!user.verified} onVerify={verifyIdentity} />}
+      <motion.div
+        key={user.role}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {user.role === "renter" ? (
+          <RenterView favorites={favorites} verified={!!user.verified} onVerify={verifyIdentity} />
+        ) : (
+          <LandlordView verified={!!user.verified} onVerify={verifyIdentity} />
+        )}
       </motion.div>
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, trend, color = "primary" }: { icon: React.ComponentType<{className?:string}>; label: string; value: string; trend?: string; color?: "primary" | "success" | "cyan" }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  trend,
+  color = "primary",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  trend?: string;
+  color?: "primary" | "success" | "cyan";
+}) {
   const colors = {
     primary: "bg-primary/10 text-primary",
     success: "bg-success/10 text-success",
@@ -118,17 +183,40 @@ function StatCard({ icon: Icon, label, value, trend, color = "primary" }: { icon
   );
 }
 
-function RenterView({ favorites, verified, onVerify }: { favorites: string[]; verified: boolean; onVerify: () => void }) {
+function RenterView({
+  favorites,
+  verified,
+  onVerify,
+}: {
+  favorites: string[];
+  verified: boolean;
+  onVerify: () => void;
+}) {
   const { t } = useTranslation();
   const saved = listings.filter((l) => favorites.includes(l.id));
 
   return (
     <div className="mt-8 space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={Heart} label={t("dashboard.savedListings")} value={String(saved.length)} color="primary" />
+        <StatCard
+          icon={Heart}
+          label={t("dashboard.savedListings")}
+          value={String(saved.length)}
+          color="primary"
+        />
         <StatCard icon={Eye} label={t("dashboard.recentlyViewed")} value="14" color="cyan" />
-        <StatCard icon={ShieldCheck} label={t("dashboard.trustScore")} value={verified ? "98%" : "—"} color="primary" />
-        <StatCard icon={BadgeCheck} label={t("dashboard.verification")} value={verified ? t("dashboard.verified") : t("dashboard.unverified")} color={verified ? "success" : "primary"} />
+        <StatCard
+          icon={ShieldCheck}
+          label={t("dashboard.trustScore")}
+          value={verified ? "98%" : "—"}
+          color="primary"
+        />
+        <StatCard
+          icon={BadgeCheck}
+          label={t("dashboard.verification")}
+          value={verified ? t("dashboard.verified") : t("dashboard.unverified")}
+          color={verified ? "success" : "primary"}
+        />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -143,7 +231,9 @@ function RenterView({ favorites, verified, onVerify }: { favorites: string[]; ve
               label={t("dashboard.verification")}
               value={
                 verified ? (
-                  <span className="flex items-center gap-1 text-success"><BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}</span>
+                  <span className="flex items-center gap-1 text-success">
+                    <BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}
+                  </span>
                 ) : (
                   <span className="text-muted-foreground">{t("dashboard.unverified")}</span>
                 )
@@ -153,31 +243,45 @@ function RenterView({ favorites, verified, onVerify }: { favorites: string[]; ve
             <Row label={t("dashboard.bookings")} value="3" />
             <Row label={t("dashboard.reviewsLeft")} value="2" />
           </div>
-          <Button variant="outline" size="sm" className="mt-4 w-full">{t("dashboard.editProfile")}</Button>
+          <Button variant="outline" size="sm" className="mt-4 w-full">
+            {t("dashboard.editProfile")}
+          </Button>
         </section>
       </div>
 
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("dashboard.savedSectionTitle")}</h2>
-          <Link to="/" className="text-sm font-medium text-primary hover:underline">{t("dashboard.browseMore")}</Link>
+          <Link to="/" className="text-sm font-medium text-primary hover:underline">
+            {t("dashboard.browseMore")}
+          </Link>
         </div>
         {saved.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-border bg-muted/30 p-12 text-center">
             <Heart className="mx-auto h-8 w-8 text-muted-foreground" />
             <p className="mt-3 font-medium">{t("dashboard.noSavedTitle")}</p>
             <p className="mt-1 text-sm text-muted-foreground">{t("dashboard.noSavedHint")}</p>
-            <Link to="/"><Button className="mt-4" size="sm">{t("dashboard.discoverPlaces")}</Button></Link>
+            <Link to="/">
+              <Button className="mt-4" size="sm">
+                {t("dashboard.discoverPlaces")}
+              </Button>
+            </Link>
           </div>
         ) : (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {saved.map((l) => (
-              <Link key={l.id} to="/property/$id" params={{ id: l.id }}
-                className="overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-card">
+              <Link
+                key={l.id}
+                to="/property/$id"
+                params={{ id: l.id }}
+                className="overflow-hidden rounded-2xl border border-border bg-card transition-all hover:-translate-y-0.5 hover:shadow-card"
+              >
                 <img src={l.image} alt="" className="aspect-[4/3] w-full object-cover" />
                 <div className="p-3">
                   <p className="truncate font-medium">{l.title}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">฿{l.price.toLocaleString()} {t("common.perMonth")}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    ฿{l.price.toLocaleString()} {t("common.perMonth")}
+                  </p>
                 </div>
               </Link>
             ))}
@@ -220,7 +324,10 @@ function VerificationPanel({ verified, onVerify }: { verified: boolean; onVerify
             type="file"
             accept="image/*,application/pdf"
             className="hidden"
-            onChange={(e) => { handleFile(e.target.files); e.target.value = ""; }}
+            onChange={(e) => {
+              handleFile(e.target.files);
+              e.target.value = "";
+            }}
           />
         </>
       )}
@@ -233,6 +340,7 @@ type Unit = {
   title: string;
   location: string;
   propertyType: string;
+  roomType: RoomTypeOption;
   bedrooms: number;
   bathrooms: number;
   sizeValue: number;
@@ -242,18 +350,36 @@ type Unit = {
   images: string[];
   description: string;
   amenities: string[];
+  petFriendly: boolean;
+  minimumLease: string;
+  depositMonths: 1 | 2;
+  utilityRates: string;
   available: boolean;
   promoted: boolean;
 };
 
-const defaultThumb = "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80";
+const defaultThumb =
+  "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80";
 
-function inferPropertyType(roomType: string, title: string): string {
+function inferPropertyType(title: string): string {
   const t = title.toLowerCase();
-  if (roomType === "Studio") return "Studio";
-  if (t.includes("townhouse")) return "Townhouse";
+  if (t.includes("dorm")) return "Dormitory";
+  if (t.includes("apartment")) return "Apartment";
   if (t.includes("house") && !t.includes("townhouse")) return "House";
   return "Condo";
+}
+
+function toRoomType(roomType: string, beds: number): RoomTypeOption {
+  if (roomType === "Studio") return "Studio";
+  if (roomType === "2 Bedroom") return "2 Bedroom";
+  if (beds <= 0) return "Studio";
+  if (beds >= 2) return "2 Bedroom";
+  return "1 Bedroom";
+}
+
+function roomTypeBedrooms(roomType: RoomTypeOption): number {
+  if (roomType === "Studio") return 0;
+  return roomType === "2 Bedroom" ? 2 : 1;
 }
 
 const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
@@ -262,7 +388,8 @@ const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
     id: l.id,
     title: l.title,
     location: l.location,
-    propertyType: inferPropertyType(l.roomType, l.title),
+    propertyType: inferPropertyType(l.title),
+    roomType: toRoomType(l.roomType, l.beds),
     bedrooms: l.beds,
     bathrooms: l.baths,
     sizeValue: l.sqm,
@@ -271,7 +398,11 @@ const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
     image: l.image,
     images: imgs.length ? imgs : [l.image],
     description: l.description,
-    amenities: [...l.amenities],
+    amenities: l.amenities.filter((a) => a !== "Pet Friendly"),
+    petFriendly: l.amenities.includes("Pet Friendly"),
+    minimumLease: "12 months",
+    depositMonths: 2,
+    utilityRates: "Water ฿18/unit · Electricity ฿7/unit",
     available: l.available,
     promoted: !!l.promoted,
   };
@@ -307,10 +438,33 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
   return (
     <div className="mt-8 space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={DollarSign} label={t("dashboard.revenueMonth")} value="฿245,000" trend="+15.3%" color="success" />
-        <StatCard icon={Calendar} label={t("dashboard.activeBookings")} value="128" trend="+8.2%" color="primary" />
-        <StatCard icon={TrendingUp} label={t("dashboard.occupancy")} value="89%" trend="+6.5%" color="cyan" />
-        <StatCard icon={HomeIcon} label={t("dashboard.listingsCount")} value={String(units.length)} color="primary" />
+        <StatCard
+          icon={DollarSign}
+          label={t("dashboard.revenueMonth")}
+          value="฿245,000"
+          trend="+15.3%"
+          color="success"
+        />
+        <StatCard
+          icon={Calendar}
+          label={t("dashboard.activeBookings")}
+          value="128"
+          trend="+8.2%"
+          color="primary"
+        />
+        <StatCard
+          icon={TrendingUp}
+          label={t("dashboard.occupancy")}
+          value="89%"
+          trend="+6.5%"
+          color="cyan"
+        />
+        <StatCard
+          icon={HomeIcon}
+          label={t("dashboard.listingsCount")}
+          value={String(units.length)}
+          color="primary"
+        />
       </div>
 
       <section className="rounded-2xl border border-border bg-card">
@@ -345,7 +499,9 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {u.location} · {u.propertyType} · {u.bedrooms} {t(u.bedrooms === 1 ? "common.bed" : "common.beds")} · {formatRoomSize(u.sizeValue, u.sizeUnit)} · ฿{u.price.toLocaleString()}{t("common.perMonth")}
+                  {u.location} · {u.propertyType} · {u.roomType} ·{" "}
+                  {formatRoomSize(u.sizeValue, u.sizeUnit)} · ฿{u.price.toLocaleString()}
+                  {t("common.perMonth")}
                 </p>
                 <div className="mt-2 inline-flex items-center gap-1 rounded-md bg-brand-cyan/10 px-2 py-0.5 text-[10px] font-medium text-brand-cyan">
                   <Sparkles className="h-3 w-3" /> {t("dashboard.aiSuggest")}
@@ -356,17 +512,29 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   title={u.title}
                   monthlyRent={u.price}
                   promoted={u.promoted}
-                  onPromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: true } : x)))}
-                  onUnpromote={() => setUnits((arr) => arr.map((x) => (x.id === u.id ? { ...x, promoted: false } : x)))}
+                  onPromote={() =>
+                    setUnits((arr) =>
+                      arr.map((x) => (x.id === u.id ? { ...x, promoted: true } : x)),
+                    )
+                  }
+                  onUnpromote={() =>
+                    setUnits((arr) =>
+                      arr.map((x) => (x.id === u.id ? { ...x, promoted: false } : x)),
+                    )
+                  }
                 />
                 <Select
                   value={u.available ? "available" : "unavailable"}
                   onValueChange={(v) =>
-                    setUnits((arr) => arr.map((x) => x.id === u.id ? { ...x, available: v === "available" } : x))
+                    setUnits((arr) =>
+                      arr.map((x) => (x.id === u.id ? { ...x, available: v === "available" } : x)),
+                    )
                   }
                 >
                   <SelectTrigger className="h-9 w-[150px] gap-1.5 text-xs font-medium">
-                    <span className={`inline-block h-2 w-2 rounded-full ${u.available ? "bg-success" : "bg-muted-foreground"}`} />
+                    <span
+                      className={`inline-block h-2 w-2 rounded-full ${u.available ? "bg-success" : "bg-muted-foreground"}`}
+                    />
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -374,11 +542,18 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                     <SelectItem value="unavailable">{t("dashboard.statusUnavailable")}</SelectItem>
                   </SelectContent>
                 </Select>
-                <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setEditing(u)} aria-label={t("common.edit")}>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setEditing(u)}
+                  aria-label={t("common.edit")}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="outline" size="icon"
+                  variant="outline"
+                  size="icon"
                   className="h-9 w-9 text-destructive hover:bg-destructive/10"
                   onClick={() => setDeleteId(u.id)}
                   aria-label={t("common.delete")}
@@ -411,11 +586,13 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         </section>
       </div>
 
-
       <ListingFormDialog
         open={creating || !!editing}
         initial={editing}
-        onClose={() => { setCreating(false); setEditing(null); }}
+        onClose={() => {
+          setCreating(false);
+          setEditing(null);
+        }}
         onSave={handleSave}
       />
       <DeleteConfirm
@@ -433,8 +610,16 @@ function exists(arr: Unit[], id: string) {
 }
 
 function ListingFormDialog({
-  open, initial, onClose, onSave,
-}: { open: boolean; initial: Unit | null; onClose: () => void; onSave: (u: Unit) => void }) {
+  open,
+  initial,
+  onClose,
+  onSave,
+}: {
+  open: boolean;
+  initial: Unit | null;
+  onClose: () => void;
+  onSave: (u: Unit) => void;
+}) {
   const { t } = useTranslation();
   const isEdit = !!initial;
   const [form, setForm] = useState<Unit>(() => initial ?? blankUnit());
@@ -466,21 +651,36 @@ function ListingFormDialog({
 
   const persist = () => {
     const images = form.images.length ? form.images : [defaultThumb];
-    onSave({ ...form, images, image: images[0], id: form.id || `u-${Date.now()}` });
+    onSave({
+      ...form,
+      bedrooms: roomTypeBedrooms(form.roomType),
+      bathrooms: 0,
+      sizeUnit: "sqm",
+      amenities: form.amenities.filter((a) => a !== "Pet Friendly"),
+      images,
+      image: images[0],
+      id: form.id || `u-${Date.now()}`,
+    });
   };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="flex max-h-[90vh] max-w-2xl flex-col overflow-hidden">
         <DialogHeader>
-          <DialogTitle>{isEdit ? t("dashboard.form.editTitle") : t("dashboard.form.addTitle")}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? t("dashboard.form.editTitle") : t("dashboard.form.addTitle")}
+          </DialogTitle>
           <DialogDescription>
             {isEdit ? t("dashboard.form.editDesc") : t("dashboard.form.addDesc")}
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           <Field label={t("dashboard.form.title")}>
-            <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t("dashboard.form.titlePh")} />
+            <Input
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder={t("dashboard.form.titlePh")}
+            />
           </Field>
           <Field label={t("dashboard.form.description")}>
             <Textarea
@@ -492,11 +692,21 @@ function ListingFormDialog({
           </Field>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={t("dashboard.form.location")}>
-              <Input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder={t("dashboard.form.locationPh")} className="h-10" />
+              <Input
+                value={form.location}
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
+                placeholder={t("dashboard.form.locationPh")}
+                className="h-10"
+              />
             </Field>
             <div className="block">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{t("dashboard.form.propertyType")}</span>
-              <Select value={form.propertyType} onValueChange={(propertyType) => setForm({ ...form, propertyType })}>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("dashboard.form.propertyType")}
+              </span>
+              <Select
+                value={form.propertyType}
+                onValueChange={(propertyType) => setForm({ ...form, propertyType })}
+              >
                 <SelectTrigger className="h-10 w-full rounded-md border-input bg-background shadow-sm">
                   <SelectValue placeholder={t("dashboard.form.propertyTypePh")} />
                 </SelectTrigger>
@@ -512,42 +722,34 @@ function ListingFormDialog({
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={t("dashboard.form.bedrooms")}>
-              <Input
-                type="number"
-                min={0}
-                max={30}
-                step={1}
-                inputMode="numeric"
-                className="h-10"
-                value={form.bedrooms}
-                onChange={(e) => {
-                  const n = Math.round(Number(e.target.value));
-                  setForm({ ...form, bedrooms: Number.isNaN(n) ? 0 : Math.min(30, Math.max(0, n)) });
-                }}
-              />
-            </Field>
-            <Field label={t("dashboard.form.bathrooms")}>
-              <Input
-                type="number"
-                min={0}
-                max={20}
-                step={0.5}
-                inputMode="decimal"
-                className="h-10"
-                value={form.bathrooms}
-                onChange={(e) => {
-                  const raw = parseFloat(e.target.value);
-                  const bathrooms = Number.isNaN(raw) ? 0 : Math.round(raw * 2) / 2;
-                  setForm({ ...form, bathrooms: Math.min(20, Math.max(0, bathrooms)) });
-                }}
-              />
-            </Field>
-          </div>
-
-          <div>
-            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{t("dashboard.form.roomSize")}</span>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_120px]">
+            <div className="block">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("dashboard.form.roomType")}
+              </span>
+              <Select
+                value={form.roomType}
+                onValueChange={(roomType) =>
+                  setForm({
+                    ...form,
+                    roomType: roomType as RoomTypeOption,
+                    bedrooms: roomTypeBedrooms(roomType as RoomTypeOption),
+                    bathrooms: 0,
+                  })
+                }
+              >
+                <SelectTrigger className="h-10 w-full rounded-md border-input bg-background shadow-sm">
+                  <SelectValue placeholder={t("dashboard.form.roomTypePh")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROOM_TYPE_OPTIONS.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {t(`dashboard.form.roomTypeOptions.${opt}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Field label={t("dashboard.form.roomSize")}>
               <Input
                 type="number"
                 min={0}
@@ -558,41 +760,127 @@ function ListingFormDialog({
                 value={form.sizeValue === 0 ? "" : form.sizeValue}
                 onChange={(e) => {
                   const raw = parseFloat(e.target.value);
-                  setForm({ ...form, sizeValue: Number.isNaN(raw) ? 0 : Math.max(0, raw) });
+                  setForm({
+                    ...form,
+                    sizeValue: Number.isNaN(raw) ? 0 : Math.max(0, raw),
+                    sizeUnit: "sqm",
+                  });
                 }}
               />
+            </Field>
+          </div>
+
+          <div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {t("dashboard.form.roomSizeHint")}{" "}
+              <span className="font-medium text-foreground">{t("dashboard.form.roomSizeEx1")}</span>
+              .
+            </p>
+          </div>
+
+          <Field label={t("dashboard.form.monthlyRent")}>
+            <Input
+              type="number"
+              min={0}
+              className="h-10"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+            />
+          </Field>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("dashboard.form.roomStatus")}
+              </span>
               <Select
-                value={form.sizeUnit}
-                onValueChange={(sizeUnit) => setForm({ ...form, sizeUnit: sizeUnit as SizeUnit })}
+                value={form.available ? "available" : "occupied"}
+                onValueChange={(v) => setForm({ ...form, available: v === "available" })}
               >
                 <SelectTrigger className="h-10 w-full rounded-md border-input bg-background shadow-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SIZE_UNITS.map((u) => (
-                    <SelectItem key={u} value={u}>
-                      {u}
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="available">{t("dashboard.form.statusAvailable")}</SelectItem>
+                  <SelectItem value="occupied">{t("dashboard.form.statusOccupied")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              {t("dashboard.form.roomSizeHint")}{" "}
-              <span className="font-medium text-foreground">{t("dashboard.form.roomSizeEx1")}</span>{" "}
-              {t("dashboard.form.roomSizeOr")}{" "}
-              <span className="font-medium text-foreground">{t("dashboard.form.roomSizeEx2")}</span>.
-            </p>
+            <div>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("dashboard.form.petFriendly")}
+              </span>
+              <Select
+                value={form.petFriendly ? "yes" : "no"}
+                onValueChange={(v) => setForm({ ...form, petFriendly: v === "yes" })}
+              >
+                <SelectTrigger className="h-10 w-full rounded-md border-input bg-background shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="yes">{t("dashboard.form.petFriendlyYes")}</SelectItem>
+                  <SelectItem value="no">{t("dashboard.form.petFriendlyNo")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          <Field label={t("dashboard.form.monthlyRent")}>
-            <Input type="number" min={0} className="h-10" value={form.price} onChange={(e) => setForm({ ...form, price: Number(e.target.value) })} />
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={t("dashboard.form.minimumLease")}>
+              <Input
+                className="h-10"
+                value={form.minimumLease}
+                onChange={(e) => setForm({ ...form, minimumLease: e.target.value })}
+                placeholder={t("dashboard.form.minimumLeasePh")}
+              />
+            </Field>
+            <div>
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+                {t("dashboard.form.depositMonths")}
+              </span>
+              <Select
+                value={String(form.depositMonths)}
+                onValueChange={(v) => setForm({ ...form, depositMonths: Number(v) as 1 | 2 })}
+              >
+                <SelectTrigger className="h-10 w-full rounded-md border-input bg-background shadow-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">{t("dashboard.form.depositOne")}</SelectItem>
+                  <SelectItem value="2">{t("dashboard.form.depositTwo")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Field label={t("dashboard.form.utilityRates")}>
+            <Textarea
+              value={form.utilityRates}
+              onChange={(e) => setForm({ ...form, utilityRates: e.target.value })}
+              placeholder={t("dashboard.form.utilityRatesPh")}
+              className="min-h-[74px] resize-y text-sm leading-relaxed"
+            />
           </Field>
 
-          <AmenitiesPicker value={form.amenities} onChange={(amenities) => setForm({ ...form, amenities })} />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <AmenitiesPicker
+              label={t("dashboard.form.inUnitAmenities")}
+              options={IN_UNIT_AMENITY_OPTIONS}
+              value={form.amenities}
+              onChange={(amenities) => setForm({ ...form, amenities })}
+            />
+            <AmenitiesPicker
+              label={t("dashboard.form.buildingAmenities")}
+              options={BUILDING_AMENITY_OPTIONS}
+              value={form.amenities}
+              onChange={(amenities) => setForm({ ...form, amenities })}
+            />
+          </div>
 
           <div>
-            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">{t("dashboard.form.photos")}</span>
+            <span className="mb-1.5 block text-xs font-medium text-muted-foreground">
+              {t("dashboard.form.photos")}
+            </span>
             <div
               role="button"
               tabIndex={0}
@@ -602,8 +890,14 @@ function ListingFormDialog({
                   fileRef.current?.click();
                 }
               }}
-              onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragEnter={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
               onDragLeave={() => setDragOver(false)}
               onDrop={(e) => {
                 e.preventDefault();
@@ -613,11 +907,15 @@ function ListingFormDialog({
               onClick={() => fileRef.current?.click()}
               className={cn(
                 "cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors",
-                dragOver ? "border-primary bg-primary/5" : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50",
+                dragOver
+                  ? "border-primary bg-primary/5"
+                  : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/50",
               )}
             >
               <Upload className="mx-auto h-8 w-8 text-muted-foreground" />
-              <p className="mt-2 text-sm font-medium text-foreground">{t("dashboard.form.dropPhotos")}</p>
+              <p className="mt-2 text-sm font-medium text-foreground">
+                {t("dashboard.form.dropPhotos")}
+              </p>
               <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.form.mockUpload")}</p>
               <input
                 ref={fileRef}
@@ -633,7 +931,10 @@ function ListingFormDialog({
             </div>
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
               {form.images.map((src, idx) => (
-                <div key={`${src}-${idx}`} className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted">
+                <div
+                  key={`${src}-${idx}`}
+                  className="relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-muted"
+                >
                   <img src={src} alt="" className="h-full w-full object-cover" />
                   <button
                     type="button"
@@ -650,23 +951,15 @@ function ListingFormDialog({
               ))}
             </div>
           </div>
-
-          <label className="flex items-center justify-between rounded-lg border border-border p-3">
-            <div>
-              <p className="text-sm font-medium">{t("dashboard.form.availableTitle")}</p>
-              <p className="text-xs text-muted-foreground">{t("dashboard.form.availableHint")}</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={form.available}
-              onChange={(e) => setForm({ ...form, available: e.target.checked })}
-              className="h-4 w-4 accent-primary"
-            />
-          </label>
         </div>
         <DialogFooter className="gap-2 border-t border-border pt-4 sm:justify-end">
-          <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
-          <Button onClick={persist} disabled={!form.title.trim() || form.price <= 0 || form.sizeValue <= 0}>
+          <Button variant="outline" onClick={onClose}>
+            {t("common.cancel")}
+          </Button>
+          <Button
+            onClick={persist}
+            disabled={!form.title.trim() || form.price <= 0 || form.sizeValue <= 0}
+          >
             {isEdit ? t("dashboard.form.saveChanges") : t("dashboard.form.createListing")}
           </Button>
         </DialogFooter>
@@ -681,8 +974,9 @@ function blankUnit(): Unit {
     title: "",
     location: "",
     propertyType: "Condo",
+    roomType: "1 Bedroom",
     bedrooms: 1,
-    bathrooms: 1,
+    bathrooms: 0,
     sizeValue: 32,
     sizeUnit: "sqm",
     price: 15000,
@@ -690,6 +984,10 @@ function blankUnit(): Unit {
     images: [defaultThumb],
     description: "",
     amenities: [],
+    petFriendly: false,
+    minimumLease: "12 months",
+    depositMonths: 2,
+    utilityRates: "",
     available: true,
     promoted: false,
   };
@@ -704,19 +1002,29 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function DeleteConfirm({ open, onCancel, onConfirm, title }: { open: boolean; onCancel: () => void; onConfirm: () => void; title?: string }) {
+function DeleteConfirm({
+  open,
+  onCancel,
+  onConfirm,
+  title,
+}: {
+  open: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+  title?: string;
+}) {
   const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t("dashboard.deleteTitle")}</DialogTitle>
-          <DialogDescription>
-            {t("dashboard.deleteDesc", { title: title ?? "" })}
-          </DialogDescription>
+          <DialogDescription>{t("dashboard.deleteDesc", { title: title ?? "" })}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" onClick={onCancel}>{t("common.cancel")}</Button>
+          <Button variant="outline" onClick={onCancel}>
+            {t("common.cancel")}
+          </Button>
           <Button variant="destructive" onClick={onConfirm} className="gap-2">
             <Trash2 className="h-4 w-4" /> {t("common.delete")}
           </Button>
@@ -727,10 +1035,17 @@ function DeleteConfirm({ open, onCancel, onConfirm, title }: { open: boolean; on
 }
 
 function PromoteToggle({
-  title, monthlyRent, promoted, onPromote, onUnpromote,
+  title,
+  monthlyRent,
+  promoted,
+  onPromote,
+  onUnpromote,
 }: {
-  title: string; monthlyRent: number; promoted: boolean;
-  onPromote: () => void; onUnpromote: () => void;
+  title: string;
+  monthlyRent: number;
+  promoted: boolean;
+  onPromote: () => void;
+  onUnpromote: () => void;
 }) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
@@ -739,10 +1054,13 @@ function PromoteToggle({
       <button
         onClick={() => (promoted ? onUnpromote() : setOpen(true))}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-          promoted ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+          promoted
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground hover:bg-muted/70"
         }`}
       >
-        <Sparkles className="h-3 w-3" /> {promoted ? t("dashboard.promoted") : t("dashboard.promote")}
+        <Sparkles className="h-3 w-3" />{" "}
+        {promoted ? t("dashboard.promoted") : t("dashboard.promote")}
       </button>
       <PromoteModal
         open={open}
@@ -763,7 +1081,6 @@ function PromoteToggle({
     </>
   );
 }
-
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (

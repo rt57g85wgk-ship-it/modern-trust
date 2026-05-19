@@ -30,3 +30,26 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# 1. Dependency & Build Outputs (ตัวจัดการโค้ดและไฟล์ที่บิวด์เสร็จแล้ว)
+node_modules/
+dist/
+.cache/
+
+# 2. AI Tools & Editor Caches (แคชของเครื่องมือ AI และระบบ Codex)
+.gpt-engineer/
+gpt-engineer-app/
+.lovable/
+.tanstack/
+.npm-cache/
+.eslintcache
+
+# 3. Server & Deployment (ไฟล์ชั่วคราวของเซิร์ฟเวอร์จำลอง)
+.wrangler/
+.dev.vars
+
+# 4. OS & Environment Files (ไฟล์ขยะของระบบปฏิบัติการและไฟล์เก็บความลับ)
+.DS_Store
+Thumbs.db
+.env
+.env.local

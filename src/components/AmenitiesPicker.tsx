@@ -18,6 +18,8 @@ type Props = {
   value: string[];
   onChange: (next: string[]) => void;
   disabled?: boolean;
+  label?: string;
+  options?: readonly string[];
 };
 
 function amenityLabel(t: (k: string) => string, canonical: string) {
@@ -26,7 +28,13 @@ function amenityLabel(t: (k: string) => string, canonical: string) {
   return t(`amenities.values.${slug}`);
 }
 
-export function AmenitiesPicker({ value, onChange, disabled }: Props) {
+export function AmenitiesPicker({
+  value,
+  onChange,
+  disabled,
+  label,
+  options = LISTING_AMENITY_OPTIONS,
+}: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -38,11 +46,14 @@ export function AmenitiesPicker({ value, onChange, disabled }: Props) {
     onChange(value.filter((x) => x !== label));
   };
 
-  const sorted = sortAmenitiesSelected(value);
+  const selectedInOptions = value.filter((item) => options.includes(item));
+  const sorted = sortAmenitiesSelected(selectedInOptions);
 
   return (
     <div className="space-y-2">
-      <span className="block text-xs font-medium text-muted-foreground">{t("amenities.label")}</span>
+      <span className="block text-xs font-medium text-muted-foreground">
+        {label ?? t("amenities.label")}
+      </span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -53,19 +64,26 @@ export function AmenitiesPicker({ value, onChange, disabled }: Props) {
             disabled={disabled}
             className="h-10 w-full justify-between rounded-lg border-input bg-background font-normal text-foreground hover:bg-accent/50"
           >
-            <span className={cn("truncate", value.length === 0 && "text-muted-foreground")}>
-              {value.length === 0 ? t("amenities.select") : t("amenities.selectedCount", { count: value.length })}
+            <span
+              className={cn("truncate", selectedInOptions.length === 0 && "text-muted-foreground")}
+            >
+              {selectedInOptions.length === 0
+                ? t("amenities.select")
+                : t("amenities.selectedCount", { count: selectedInOptions.length })}
             </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0" align="start">
+        <PopoverContent
+          className="w-[var(--radix-popover-trigger-width)] min-w-[280px] p-0"
+          align="start"
+        >
           <Command>
             <CommandInput placeholder={t("amenities.search")} className="h-9" />
             <CommandList>
               <CommandEmpty>{t("amenities.empty")}</CommandEmpty>
               <CommandGroup>
-                {LISTING_AMENITY_OPTIONS.map((opt) => {
+                {options.map((opt) => {
                   const selected = value.includes(opt);
                   const display = amenityLabel(t, opt);
                   return (

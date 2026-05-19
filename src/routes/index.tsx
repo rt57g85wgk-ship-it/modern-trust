@@ -2,7 +2,20 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, MapPin, Wallet, Home as HomeIcon, ShieldCheck, Sparkles, Zap, ArrowRight, Star, ChevronDown, PawPrint, FileText } from "lucide-react";
+import {
+  Search,
+  MapPin,
+  Wallet,
+  Home as HomeIcon,
+  ShieldCheck,
+  Sparkles,
+  Zap,
+  ArrowRight,
+  Star,
+  ChevronDown,
+  PawPrint,
+  FileText,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listings } from "@/lib/mock-data";
 import { PropertyCard, PropertyCardSkeleton } from "@/components/PropertyCard";
@@ -13,9 +26,16 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Modern Trust — Find your perfect place" },
-      { name: "description", content: "Discover verified rentals in Bangkok. Smart search, transparent pricing, AI-powered recommendations." },
+      {
+        name: "description",
+        content:
+          "Discover verified rentals in Bangkok. Smart search, transparent pricing, AI-powered recommendations.",
+      },
       { property: "og:title", content: "Modern Trust — Find your perfect place" },
-      { property: "og:description", content: "Verified rentals in Bangkok with AI-powered search." },
+      {
+        property: "og:description",
+        content: "Verified rentals in Bangkok with AI-powered search.",
+      },
     ],
   }),
 });
@@ -88,15 +108,30 @@ function Landing() {
   const matchIds = useMemo(() => bestMatchIds(filtered, q, 3), [filtered, q]);
 
   const recommendedForYou = useMemo(
-    () => sortByMatchScore(filtered.filter((l) => l.promoted && l.available), q),
+    () =>
+      sortByMatchScore(
+        filtered.filter((l) => l.promoted && l.available),
+        q,
+      ),
     [filtered, q],
   );
 
-  const browseListings = useMemo(() => filtered.filter((l) => !(l.promoted && l.available)), [filtered]);
+  const browseListings = useMemo(
+    () => filtered.filter((l) => !(l.promoted && l.available)),
+    [filtered],
+  );
 
   const testimonials = [
-    { name: "Praew T.", roleKey: "testimonial1Role" as const, textKey: "testimonial1Text" as const },
-    { name: "Khun Som", roleKey: "testimonial2Role" as const, textKey: "testimonial2Text" as const },
+    {
+      name: "Praew T.",
+      roleKey: "testimonial1Role" as const,
+      textKey: "testimonial1Text" as const,
+    },
+    {
+      name: "Khun Som",
+      roleKey: "testimonial2Role" as const,
+      textKey: "testimonial2Text" as const,
+    },
     { name: "Mike L.", roleKey: "testimonial3Role" as const, textKey: "testimonial3Text" as const },
   ];
 
@@ -108,15 +143,22 @@ function Landing() {
         <div className="absolute -bottom-32 left-0 h-96 w-96 rounded-full bg-brand-cyan/15 blur-3xl" />
 
         <div className="relative mx-auto max-w-7xl px-4 pb-20 pt-16 sm:px-6 lg:px-8 lg:pt-24">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto max-w-3xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mx-auto max-w-3xl text-center"
+          >
             <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/50 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
               <Sparkles className="h-3 w-3 text-primary" /> {t("landing.heroBadge")}
             </span>
             <h1 className="mt-6 text-4xl font-bold leading-[1.05] sm:text-5xl lg:text-6xl">
-              {t("landing.heroTitle1")} <span className="text-brand-gradient">{t("landing.heroTitleAccent")}</span>
+              {t("landing.heroTitle1")}{" "}
+              <span className="text-brand-gradient">{t("landing.heroTitleAccent")}</span>
               <br className="hidden sm:block" /> {t("landing.heroTitle2")}
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">{t("landing.heroSubtitle")}</p>
+            <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+              {t("landing.heroSubtitle")}
+            </p>
           </motion.div>
 
           <motion.div
@@ -147,7 +189,10 @@ function Landing() {
                   <option value="30000-99999">{t("landing.budget30plus")}</option>
                 </select>
               </Field>
-              <Field icon={<HomeIcon className="h-4 w-4" />} label={t("landing.searchPropertyType")}>
+              <Field
+                icon={<HomeIcon className="h-4 w-4" />}
+                label={t("landing.searchPropertyType")}
+              >
                 <select
                   value={q.room}
                   onChange={(e) => setQ({ ...q, room: e.target.value })}
@@ -178,7 +223,9 @@ function Landing() {
                 className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/5"
               >
                 {showMore ? t("landing.hideMoreOptions") : t("landing.moreOptions")}
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showMore ? "rotate-180" : ""}`} />
+                <ChevronDown
+                  className={`h-3.5 w-3.5 transition-transform ${showMore ? "rotate-180" : ""}`}
+                />
               </button>
             </div>
 
@@ -203,7 +250,10 @@ function Landing() {
                           { v: "2 Bedroom", label: t("landing.room2br") },
                           { v: "3+ Bedroom", label: t("landing.room3br") },
                         ].map((opt) => (
-                          <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label
+                            key={opt.v}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
                             <input
                               type="radio"
                               name="roomLayout"
@@ -241,7 +291,10 @@ function Landing() {
                           { v: "1y", label: t("landing.lease1y") },
                           { v: "under1y", label: t("landing.leaseUnder1y") },
                         ].map((opt) => (
-                          <label key={opt.v} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label
+                            key={opt.v}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
                             <input
                               type="radio"
                               name="lease"
@@ -258,17 +311,20 @@ function Landing() {
 
                   <div className="grid gap-6 px-2 pb-3 pt-4 sm:px-3 md:grid-cols-2">
                     <div>
-                      <div className="mb-2 inline-flex items-center rounded-md bg-success/10 px-2 py-1 text-xs font-semibold text-success">
+                      <div className="mb-2 inline-flex items-center rounded-md bg-brand-cyan/10 px-2 py-1 text-xs font-semibold text-brand-cyan">
                         {t("landing.inUnitAmenities")}
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                         {IN_UNIT_AMENITIES.map((a) => (
-                          <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label
+                            key={a.key}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
                             <input
                               type="checkbox"
                               checked={q.amenities.includes(a.key)}
                               onChange={() => toggleAmenity(a.key)}
-                              className="h-3.5 w-3.5 accent-primary"
+                              className="h-3.5 w-3.5 accent-brand-cyan"
                             />
                             {a.label}
                           </label>
@@ -276,12 +332,15 @@ function Landing() {
                       </div>
                     </div>
                     <div>
-                      <div className="mb-2 inline-flex items-center rounded-md bg-success/10 px-2 py-1 text-xs font-semibold text-success">
+                      <div className="mb-2 inline-flex items-center rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
                         {t("landing.buildingAmenities")}
                       </div>
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                         {BUILDING_AMENITIES.map((a) => (
-                          <label key={a.key} className="flex cursor-pointer items-center gap-2 text-sm">
+                          <label
+                            key={a.key}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
                             <input
                               type="checkbox"
                               checked={q.amenities.includes(a.key)}
@@ -315,7 +374,10 @@ function Landing() {
         </div>
       </section>
 
-      <section id="recommended" className="scroll-mt-20 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+      <section
+        id="recommended"
+        className="scroll-mt-20 mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
+      >
         {loading ? (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -337,8 +399,12 @@ function Landing() {
                     <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary">
                       <Sparkles className="h-3.5 w-3.5" /> {t("landing.personalized")}
                     </div>
-                    <h2 className="mt-3 text-2xl font-bold sm:text-3xl">{t("landing.recommendedTitle")}</h2>
-                    <p className="mt-1 max-w-xl text-sm text-muted-foreground">{t("landing.recommendedDesc")}</p>
+                    <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
+                      {t("landing.recommendedTitle")}
+                    </h2>
+                    <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                      {t("landing.recommendedDesc")}
+                    </p>
                   </div>
                 </div>
                 <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -358,7 +424,10 @@ function Landing() {
                     {recommendedForYou.length > 0 && t("landing.matchingPromotedNote")}
                   </p>
                 </div>
-                <Link to="/" className="hidden shrink-0 text-sm font-medium text-primary hover:underline sm:inline">
+                <Link
+                  to="/"
+                  className="hidden shrink-0 text-sm font-medium text-primary hover:underline sm:inline"
+                >
                   {t("common.viewAll")}
                 </Link>
               </div>
@@ -386,8 +455,16 @@ function Landing() {
           </div>
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {[
-              { icon: ShieldCheck, titleKey: "valueHostsTitle" as const, descKey: "valueHostsDesc" as const },
-              { icon: Sparkles, titleKey: "valueAiTitle" as const, descKey: "valueAiDesc" as const },
+              {
+                icon: ShieldCheck,
+                titleKey: "valueHostsTitle" as const,
+                descKey: "valueHostsDesc" as const,
+              },
+              {
+                icon: Sparkles,
+                titleKey: "valueAiTitle" as const,
+                descKey: "valueAiDesc" as const,
+              },
               { icon: Zap, titleKey: "valueBookTitle" as const, descKey: "valueBookDesc" as const },
             ].map((f) => (
               <motion.div
@@ -422,7 +499,11 @@ function Landing() {
                   </Button>
                 </Link>
                 <Link to="/dashboard">
-                  <Button size="lg" variant="outline" className="border-white/30 bg-white/10 text-white hover:bg-white/20">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20"
+                  >
                     {t("landing.ctaDashboard")}
                   </Button>
                 </Link>
@@ -448,13 +529,21 @@ function Landing() {
       <section className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-2xl font-bold sm:text-3xl">{t("landing.testimonialsTitle")}</h2>
-          <p className="mt-2 text-sm text-muted-foreground sm:text-base">{t("landing.testimonialsSubtitle")}</p>
+          <p className="mt-2 text-sm text-muted-foreground sm:text-base">
+            {t("landing.testimonialsSubtitle")}
+          </p>
         </div>
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {testimonials.map((row) => (
             <div key={row.name} className="rounded-2xl border border-border bg-card p-6">
-              <div className="flex gap-0.5 text-warning">{[...Array(5)].map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}</div>
-              <p className="mt-3 text-sm text-foreground">&ldquo;{t(`landing.${row.textKey}`)}&rdquo;</p>
+              <div className="flex gap-0.5 text-warning">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-current" />
+                ))}
+              </div>
+              <p className="mt-3 text-sm text-foreground">
+                &ldquo;{t(`landing.${row.textKey}`)}&rdquo;
+              </p>
               <div className="mt-4 text-sm">
                 <div className="font-semibold">{row.name}</div>
                 <div className="text-muted-foreground">{t(`landing.${row.roleKey}`)}</div>
@@ -467,12 +556,22 @@ function Landing() {
   );
 }
 
-function Field({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
+function Field({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex items-center gap-3 rounded-xl border border-transparent bg-muted/40 px-3 py-2 transition-colors focus-within:border-primary focus-within:bg-background">
       <span className="text-muted-foreground">{icon}</span>
       <span className="flex-1">
-        <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+        <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
         {children}
       </span>
     </label>
