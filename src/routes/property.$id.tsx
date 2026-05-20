@@ -27,6 +27,7 @@ import {
   IN_UNIT_AMENITY_OPTIONS,
 } from "@/lib/amenities";
 import { useApp } from "@/lib/app-context";
+import { slugify } from "@/lib/profiles";
 
 export const Route = createFileRoute("/property/$id")({
   loader: ({ params }) => {
@@ -68,18 +69,19 @@ function PropertyPage() {
     return slug ? t(`amenities.values.${slug}`) : amenity;
   };
 
-  const inUnitAmenities = listing.amenities.filter((amenity) =>
+  const inUnitAmenities = listing.amenities.filter((amenity: string) =>
     (IN_UNIT_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
-  const buildingAmenities = listing.amenities.filter((amenity) =>
+  const buildingAmenities = listing.amenities.filter((amenity: string) =>
     (BUILDING_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
   const otherAmenities = listing.amenities.filter(
-    (amenity) =>
+    (amenity: string) =>
       amenity !== "Pet Friendly" &&
       !(IN_UNIT_AMENITY_OPTIONS as readonly string[]).includes(amenity) &&
       !(BUILDING_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
+  const landlordId = slugify(listing.landlord.name);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -142,10 +144,14 @@ function PropertyPage() {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
         <div>
-          <div className="flex items-center gap-3 border-b border-border pb-6">
+          <Link
+            to="/profile/$id"
+            params={{ id: landlordId }}
+            className="flex items-center gap-3 border-b border-border pb-6 transition-colors hover:opacity-90"
+          >
             <img
               src={listing.landlord.avatar}
-              className="h-12 w-12 rounded-full object-cover"
+              className="h-12 w-12 rounded-full object-cover ring-2 ring-transparent transition-all group-hover:ring-primary/30"
               alt=""
             />
             <div className="flex-1">
@@ -153,9 +159,11 @@ function PropertyPage() {
                 {t("property.hostedBy")} {listing.landlord.name}
                 {listing.landlord.verified && <ShieldCheck className="h-4 w-4 text-primary" />}
               </div>
-              <p className="text-xs text-muted-foreground">{t("property.responds")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("property.responds")} · View profile →
+              </p>
             </div>
-          </div>
+          </Link>
 
           <div className="grid gap-4 py-6 sm:grid-cols-3">
             {[
