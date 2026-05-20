@@ -68,18 +68,19 @@ function PropertyPage() {
     return slug ? t(`amenities.values.${slug}`) : amenity;
   };
 
-  const inUnitAmenities = listing.amenities.filter((amenity) =>
+  const inUnitAmenities = listing.amenities.filter((amenity: string) =>
     (IN_UNIT_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
-  const buildingAmenities = listing.amenities.filter((amenity) =>
+  const buildingAmenities = listing.amenities.filter((amenity: string) =>
     (BUILDING_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
   const otherAmenities = listing.amenities.filter(
-    (amenity) =>
+    (amenity: string) =>
       amenity !== "Pet Friendly" &&
       !(IN_UNIT_AMENITY_OPTIONS as readonly string[]).includes(amenity) &&
       !(BUILDING_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
+  const landlordId = slugify(listing.landlord.name);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
