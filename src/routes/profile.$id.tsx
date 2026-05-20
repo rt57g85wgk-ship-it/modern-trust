@@ -43,7 +43,7 @@ function ProfilePage() {
   const { user } = useApp();
   const nav = useNavigate();
 
-  let view = profile;
+  let view: PublicProfile | null = profile;
   if (isMe) {
     if (!user) {
       if (typeof window !== "undefined") setTimeout(() => nav({ to: "/login" }), 0);
