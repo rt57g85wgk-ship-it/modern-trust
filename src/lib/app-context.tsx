@@ -2,7 +2,38 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import i18n from "@/lib/i18n";
 
 type Role = "renter" | "landlord";
-type User = { name: string; email: string; role: Role; verified?: boolean } | null;
+
+export type PaymentMethod = {
+  id: string;
+  brand: string; // Visa, Mastercard, PromptPay, etc.
+  last4: string;
+  holder?: string;
+  expiry?: string; // MM/YY
+};
+
+export type UserProfile = {
+  name: string;
+  email: string;
+  role: Role;
+  verified?: boolean;
+  avatar?: string;
+  bio?: string;
+  phone?: string;
+  // Renter extras
+  preferredArea?: string;
+  moveInTimeline?: string;
+  lifestyleTags?: string[];
+  // Settings
+  language?: "en" | "th";
+  notifyEmail?: boolean;
+  notifyPush?: boolean;
+  notifySms?: boolean;
+  googleConnected?: boolean;
+  // Payments
+  paymentMethods?: PaymentMethod[];
+};
+
+type User = UserProfile | null;
 
 type Ctx = {
   user: User;
@@ -15,6 +46,9 @@ type Ctx = {
   toggleLang: () => void;
   switchRole: () => void;
   verifyIdentity: () => void;
+  updateProfile: (patch: Partial<UserProfile>) => void;
+  addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => void;
+  removePaymentMethod: (id: string) => void;
 };
 
 const AppContext = createContext<Ctx | null>(null);
@@ -43,10 +77,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("mt_fav", JSON.stringify(favorites));
   }, [favorites]);
 
-  const login = (u: NonNullable<User>) => {
-    setUser(u);
-    localStorage.setItem("mt_user", JSON.stringify(u));
+  const persist = (next: NonNullable<User>) => {
+    setUser(next);
+    localStorage.setItem("mt_user", JSON.stringify(next));
   };
+
+  const login = (u: NonNullable<User>) => persist(u);
   const logout = () => {
     setUser(null);
     localStorage.removeItem("mt_user");
@@ -65,20 +101,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
   const switchRole = () => {
     if (!user) return;
-    const next: User = { ...user, role: user.role === "renter" ? "landlord" : "renter" };
-    setUser(next);
-    localStorage.setItem("mt_user", JSON.stringify(next));
+    persist({ ...user, role: user.role === "renter" ? "landlord" : "renter" });
   };
   const verifyIdentity = () => {
     if (!user) return;
-    const next: User = { ...user, verified: true };
-    setUser(next);
-    localStorage.setItem("mt_user", JSON.stringify(next));
+    persist({ ...user, verified: true });
+  };
+  const updateProfile = (patch: Partial<UserProfile>) => {
+    if (!user) return;
+    persist({ ...user, ...patch });
+  };
+  const addPaymentMethod = (pm: Omit<PaymentMethod, "id">) => {
+    if (!user) return;
+    const next: PaymentMethod = { ...pm, id: `pm-${Date.now()}` };
+    persist({ ...user, paymentMethods: [...(user.paymentMethods ?? []), next] });
+  };
+  const removePaymentMethod = (id: string) => {
+    if (!user) return;
+    persist({
+      ...user,
+      paymentMethods: (user.paymentMethods ?? []).filter((p) => p.id !== id),
+    });
   };
 
   return (
-    <AppContext.Provider value={{ user, favorites, theme, login, logout, toggleFavorite, toggleTheme, toggleLang, switchRole, verifyIdentity }}>
-
+    <AppContext.Provider
+      value={{
+        user,
+        favorites,
+        theme,
+        login,
+        logout,
+        toggleFavorite,
+        toggleTheme,
+        toggleLang,
+        switchRole,
+        verifyIdentity,
+        updateProfile,
+        addPaymentMethod,
+        removePaymentMethod,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
