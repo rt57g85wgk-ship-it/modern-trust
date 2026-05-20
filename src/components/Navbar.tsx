@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard, LogIn } from "lucide-react";
+import { Moon, Sun, Globe, LogOut, Menu, X, LayoutDashboard, LogIn, User, Settings } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Logo } from "./Logo";
 import { useApp } from "@/lib/app-context";
@@ -59,6 +59,16 @@ export function Navbar() {
           <DropdownMenuItem asChild>
             <Link to="/dashboard" className="gap-2">
               <LayoutDashboard className="h-4 w-4" /> {t("nav.dashboard")}
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/profile/$id" params={{ id: "me" }} className="gap-2">
+              <User className="h-4 w-4" /> My profile
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <Link to="/account" className="gap-2">
+              <Settings className="h-4 w-4" /> Account settings
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => logout()} className="gap-2 text-destructive focus:text-destructive">
@@ -165,6 +175,21 @@ export function Navbar() {
                     className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <LayoutDashboard className="h-4 w-4" /> {t("nav.dashboard")}
+                  </Link>
+                  <Link
+                    to="/profile/$id"
+                    params={{ id: "me" }}
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <User className="h-4 w-4" /> My profile
+                  </Link>
+                  <Link
+                    to="/account"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+                  >
+                    <Settings className="h-4 w-4" /> Account settings
                   </Link>
                   <button
                     onClick={() => {
