@@ -129,9 +129,11 @@ function Dashboard() {
           <Button variant="ghost" size="icon">
             <Bell className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon">
-            <Settings className="h-4 w-4" />
-          </Button>
+          <Link to="/account">
+            <Button variant="ghost" size="icon" aria-label="Account settings">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -243,9 +245,18 @@ function RenterView({
             <Row label={t("dashboard.bookings")} value="3" />
             <Row label={t("dashboard.reviewsLeft")} value="2" />
           </div>
-          <Button variant="outline" size="sm" className="mt-4 w-full">
-            {t("dashboard.editProfile")}
-          </Button>
+          <div className="mt-4 flex gap-2">
+            <Link to="/profile/$id" params={{ id: "me" }} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                View public profile
+              </Button>
+            </Link>
+            <Link to="/account" className="flex-1">
+              <Button size="sm" className="w-full">
+                {t("dashboard.editProfile")}
+              </Button>
+            </Link>
+          </div>
         </section>
       </div>
 
