@@ -55,6 +55,10 @@ import {
 import { BUILDING_AMENITY_OPTIONS, IN_UNIT_AMENITY_OPTIONS } from "@/lib/amenities";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { AnimatePresence } from "framer-motion";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -367,6 +371,11 @@ type Unit = {
   utilityRates: string;
   available: boolean;
   promoted: boolean;
+  electric_rate_type?: "GOVERNMENT" | "FIXED";
+  electric_rate?: number | string;
+  water_rate_type?: "GOVERNMENT" | "FIXED";
+  water_rate?: number | string;
+  imageFiles?: File[];
 };
 
 const defaultThumb =
@@ -426,15 +435,100 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const handleSave = (u: Unit) => {
-    setUnits((arr) => {
-      const exists = arr.some((x) => x.id === u.id);
-      if (exists) return arr.map((x) => (x.id === u.id ? u : x));
-      return [u, ...arr];
-    });
-    toast.success(exists(units, u.id) ? t("dashboard.toastUpdated") : t("dashboard.toastAdded"));
-    setEditing(null);
-    setCreating(false);
+  const handleSave = async (u: Unit) => {
+    try {
+      const isExisting = exists(units, u.id);
+      
+      if (!isExisting) {
+        const owner_id = "00000000-0000-0000-0000-000000000000";
+
+        // Insert Building
+        const { data: buildingData, error: buildingError } = await supabase
+          .from("buildings")
+          .insert({
+            owner_id,
+            building_name: u.title, // หรือคุณอาจจะให้กรอกชื่อตึกแยกต่างหาก
+            address: u.location,
+            property_type: u.propertyType.toUpperCase(),
+            latitude: 13.7563,
+            longitude: 100.5018,
+            zone_tag: u.location,
+            amenities_building: u.amenities, // แก้ไขชื่อตัวแปรให้ตรงกับตาราง SQL (amenities_building)
+          })
+          .select("building_id")
+          .single();
+
+        if (buildingError) throw buildingError;
+
+        // Upload images to Supabase Storage (room-images bucket)
+        const uploadedUrls: string[] = [];
+        if (u.imageFiles && u.imageFiles.length > 0) {
+          for (const file of u.imageFiles) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${owner_id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('room-images')
+              .upload(filePath, file);
+
+            if (uploadError) {
+              console.error("Upload error:", uploadError);
+              throw new Error(`อัปโหลดรูปภาพ ${file.name} ไม่สำเร็จ: ${uploadError.message}`);
+            }
+
+            const { data: publicUrlData } = supabase.storage
+              .from('room-images')
+              .getPublicUrl(filePath);
+
+            uploadedUrls.push(publicUrlData.publicUrl);
+          }
+        }
+
+        // เก็บ URL รูปเดิมที่เคยมีอยู่ (เผื่อกรณีแก้ไข)
+        const existingRemoteUrls = u.images.filter(
+          (url) => !url.startsWith("blob:") && !url.includes("images.unsplash.com")
+        );
+        const finalImages = [...existingRemoteUrls, ...uploadedUrls];
+
+        // Insert Room
+        const { error: roomError } = await supabase
+          .from("rooms")
+          .insert({
+            building_id: buildingData.building_id,
+            room_number: `RM-${Math.floor(Math.random() * 1000)}`,
+            listing_title: u.title, // เพิ่มตัวแปร listing_title ตาม SQL
+            room_type: u.roomType === "Studio" ? "STUDIO" : u.roomType === "1 Bedroom" ? "1_BEDROOM" : "2_BEDROOM",
+            room_size_sqm: u.sizeValue,
+            status: u.available ? "AVAILABLE" : "OCCUPIED",
+            base_rent_monthly: u.price,
+            electric_rate_type: u.electric_rate_type || "GOVERNMENT",
+            electric_rate: parseFloat(String(u.electric_rate)) || 0,
+            water_rate_type: u.water_rate_type || "GOVERNMENT",
+            water_rate: parseFloat(String(u.water_rate)) || 0,
+            deposit_months: u.depositMonths,
+            min_contract_months: parseInt(u.minimumLease) || 12,
+            pet_friendly: u.petFriendly,
+            no_smoking: true,
+            description: u.description,
+            amenities_in_room: u.amenities,
+            images: finalImages, // ส่ง URL ที่อัปโหลดเสร็จแล้วเข้าฐานข้อมูล (อย่าลืมสร้างคอลัมน์นี้ใน SQL นะครับ)
+          });
+
+        if (roomError) throw roomError;
+      }
+
+      setUnits((arr) => {
+        if (isExisting) return arr.map((x) => (x.id === u.id ? u : x));
+        return [u, ...arr];
+      });
+      toast.success(isExisting ? t("dashboard.toastUpdated") : t("dashboard.toastAdded"));
+      setEditing(null);
+      setCreating(false);
+    } catch (error: any) {
+      console.error("Supabase Error:", error);
+      toast.error(error.message || "Failed to save listing to Supabase.");
+    }
   };
 
   const handleDelete = () => {
@@ -633,35 +727,128 @@ function ListingFormDialog({
 }) {
   const { t } = useTranslation();
   const isEdit = !!initial;
-  const [form, setForm] = useState<Unit>(() => initial ?? blankUnit());
+  const [form, setForm] = useState<Unit>(() => {
+    const init = initial ? { ...initial } : blankUnit();
+    if (!init.electric_rate_type) {
+      const ratesStr = init.utilityRates || "";
+      if (ratesStr.toLowerCase().includes("electricity ฿") || ratesStr.includes("ค่าไฟ ฿")) {
+        init.electric_rate_type = "FIXED";
+        const match = ratesStr.match(/(?:Electricity ฿|ค่าไฟ ฿)([\d.]+)/);
+        init.electric_rate = match ? parseFloat(match[1]) : 7;
+      } else {
+        init.electric_rate_type = "GOVERNMENT";
+      }
+    }
+    if (!init.water_rate_type) {
+      const ratesStr = init.utilityRates || "";
+      if (ratesStr.toLowerCase().includes("water ฿") || ratesStr.includes("ค่าน้ำ ฿") || ratesStr.includes("เหมาจ่าย ฿") || ratesStr.includes("ต่อหน่วย ฿")) {
+        init.water_rate_type = "FIXED";
+        const match = ratesStr.match(/(?:Water ฿|ค่าน้ำ ฿|เหมาจ่าย ฿|ต่อหน่วย ฿)([\d.]+)/);
+        init.water_rate = match ? parseFloat(match[1]) : 18;
+      } else {
+        init.water_rate_type = "GOVERNMENT";
+      }
+    }
+    return init;
+  });
   const [dragOver, setDragOver] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setForm(initial ?? blankUnit());
+    const init = initial ? { ...initial } : blankUnit();
+    if (!init.electric_rate_type) {
+      const ratesStr = init.utilityRates || "";
+      if (ratesStr.toLowerCase().includes("electricity ฿") || ratesStr.includes("ค่าไฟ ฿")) {
+        init.electric_rate_type = "FIXED";
+        const match = ratesStr.match(/(?:Electricity ฿|ค่าไฟ ฿)([\d.]+)/);
+        init.electric_rate = match ? parseFloat(match[1]) : 7;
+      } else {
+        init.electric_rate_type = "GOVERNMENT";
+      }
+    }
+    if (!init.water_rate_type) {
+      const ratesStr = init.utilityRates || "";
+      if (ratesStr.toLowerCase().includes("water ฿") || ratesStr.includes("ค่าน้ำ ฿") || ratesStr.includes("เหมาจ่าย ฿") || ratesStr.includes("ต่อหน่วย ฿")) {
+        init.water_rate_type = "FIXED";
+        const match = ratesStr.match(/(?:Water ฿|ค่าน้ำ ฿|เหมาจ่าย ฿|ต่อหน่วย ฿)([\d.]+)/);
+        init.water_rate = match ? parseFloat(match[1]) : 18;
+      } else {
+        init.water_rate_type = "GOVERNMENT";
+      }
+    }
+    setForm(init);
   }, [initial, open]);
 
   const addImageUrls = (files: FileList | File[] | null) => {
     if (!files || !files.length) return;
-    const urls = Array.from(files as File[]).map((f) => URL.createObjectURL(f));
+    
+    const fileArray = Array.from(files as File[]);
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+    const validFiles = fileArray.filter(f => {
+      if (f.size > MAX_SIZE) {
+        toast.error(`ไฟล์ ${f.name} มีขนาดใหญ่เกิน 5MB`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
+
     setForm((prev) => {
-      const images = [...prev.images, ...urls];
-      return { ...prev, images, image: images[0] ?? prev.image };
+      const currentImages = prev.images.filter(src => src !== defaultThumb);
+      const remainingSlots = 5 - currentImages.length;
+      
+      if (remainingSlots <= 0) {
+        toast.error("อัปโหลดได้สูงสุด 5 รูปเท่านั้น");
+        return prev;
+      }
+
+      const filesToAdd = validFiles.slice(0, remainingSlots);
+      if (validFiles.length > remainingSlots) {
+        toast.warning(`ระบบเพิ่มได้อีกแค่ ${remainingSlots} รูป (สูงสุด 5 รูป)`);
+      }
+
+      const urls = filesToAdd.map((f) => URL.createObjectURL(f));
+      const newImages = [...currentImages, ...urls];
+      const newImageFiles = [...(prev.imageFiles || []), ...filesToAdd];
+      
+      return { 
+        ...prev, 
+        images: newImages, 
+        imageFiles: newImageFiles, 
+        image: newImages[0] ?? prev.image 
+      };
     });
   };
 
   const removeImageAt = (idx: number) => {
     setForm((prev) => {
-      const target = prev.images[idx];
+      const currentImages = prev.images.filter(src => src !== defaultThumb);
+      const target = currentImages[idx];
       if (target?.startsWith("blob:")) URL.revokeObjectURL(target);
-      const next = prev.images.filter((_, i) => i !== idx);
-      const images = next.length ? next : [defaultThumb];
-      return { ...prev, images, image: images[0] };
+      
+      const nextImages = currentImages.filter((_, i) => i !== idx);
+      const nextFiles = prev.imageFiles ? prev.imageFiles.filter((_, i) => i !== idx) : [];
+      
+      const finalImages = nextImages.length ? nextImages : [defaultThumb];
+      return { ...prev, images: finalImages, imageFiles: nextFiles, image: finalImages[0] };
     });
   };
 
   const persist = () => {
     const images = form.images.length ? form.images : [defaultThumb];
+
+    const waterStr = form.water_rate_type === "GOVERNMENT"
+      ? "Water (Gov Rate)"
+      : `Water ฿${form.water_rate || 0}/unit`;
+
+    const electricStr = form.electric_rate_type === "GOVERNMENT"
+      ? "Electricity (Gov Rate)"
+      : `Electricity ฿${form.electric_rate || 0}/unit`;
+
+    const utilityRates = `${waterStr} · ${electricStr}`;
+
     onSave({
       ...form,
       bedrooms: roomTypeBedrooms(form.roomType),
@@ -671,6 +858,7 @@ function ListingFormDialog({
       images,
       image: images[0],
       id: form.id || `u-${Date.now()}`,
+      utilityRates,
     });
   };
 
@@ -864,14 +1052,139 @@ function ListingFormDialog({
             </div>
           </div>
 
-          <Field label={t("dashboard.form.utilityRates")}>
-            <Textarea
-              value={form.utilityRates}
-              onChange={(e) => setForm({ ...form, utilityRates: e.target.value })}
-              placeholder={t("dashboard.form.utilityRatesPh")}
-              className="min-h-[74px] resize-y text-sm leading-relaxed"
-            />
-          </Field>
+          <div className="space-y-4 rounded-xl border border-border bg-muted/20 p-4">
+            <span className="block text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t("dashboard.form.utilityRates")}
+            </span>
+
+            {/* ค่าไฟ (Electricity) */}
+            <div className="space-y-3">
+              <span className="block text-xs font-semibold text-foreground">
+                ค่าไฟ (Electricity Rate)
+              </span>
+              <RadioGroup
+                value={form.electric_rate_type}
+                onValueChange={(v) =>
+                  setForm({
+                    ...form,
+                    electric_rate_type: v as "GOVERNMENT" | "FIXED",
+                    electric_rate: v === "GOVERNMENT" ? "" : form.electric_rate || "",
+                  })
+                }
+                className="flex flex-wrap gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="GOVERNMENT" id="electric-gov" />
+                  <Label htmlFor="electric-gov" className="cursor-pointer text-sm font-normal">
+                    เรทการไฟฟ้า (ไฟหลวง)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="FIXED" id="electric-fixed" />
+                  <Label htmlFor="electric-fixed" className="cursor-pointer text-sm font-normal">
+                    เรทหอพัก/คอนโด (Fixed Rate)
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              <AnimatePresence initial={false}>
+                {form.electric_rate_type === "FIXED" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-2">
+                      <Label htmlFor="electric-rate-input" className="mb-1.5 block text-xs text-muted-foreground">
+                        ค่าไฟต่อหน่วย (บาท)
+                      </Label>
+                      <Input
+                        id="electric-rate-input"
+                        type="text"
+                        inputMode="decimal"
+                        className="h-10"
+                        placeholder="เช่น 7.00"
+                        value={form.electric_rate ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                            setForm({ ...form, electric_rate: val });
+                          }
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <hr className="border-border/60" />
+
+            {/* ค่าน้ำ (Water) */}
+            <div className="space-y-3">
+              <span className="block text-xs font-semibold text-foreground">
+                ค่าน้ำ (Water Rate)
+              </span>
+              <RadioGroup
+                value={form.water_rate_type}
+                onValueChange={(v) =>
+                  setForm({
+                    ...form,
+                    water_rate_type: v as "GOVERNMENT" | "FIXED",
+                    water_rate: v === "GOVERNMENT" ? "" : form.water_rate || "",
+                  })
+                }
+                className="flex flex-wrap gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="GOVERNMENT" id="water-gov" />
+                  <Label htmlFor="water-gov" className="cursor-pointer text-sm font-normal">
+                    เรทการประปา
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="FIXED" id="water-fixed" />
+                  <Label htmlFor="water-fixed" className="cursor-pointer text-sm font-normal">
+                    เรทเหมาจ่าย/ต่อหน่วย
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              <AnimatePresence initial={false}>
+                {form.water_rate_type === "FIXED" && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="pt-2">
+                      <Label htmlFor="water-rate-input" className="mb-1.5 block text-xs text-muted-foreground">
+                        ค่าน้ำ (บาท)
+                      </Label>
+                      <Input
+                        id="water-rate-input"
+                        type="text"
+                        inputMode="decimal"
+                        className="h-10"
+                        placeholder="เช่น 18.00"
+                        value={form.water_rate ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "" || /^\d*\.?\d*$/.test(val)) {
+                            setForm({ ...form, water_rate: val });
+                          }
+                        }}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <AmenitiesPicker
@@ -927,11 +1240,11 @@ function ListingFormDialog({
               <p className="mt-2 text-sm font-medium text-foreground">
                 {t("dashboard.form.dropPhotos")}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("dashboard.form.mockUpload")}</p>
+              <p className="mt-1 text-xs text-muted-foreground">สูงสุด 5 รูป / รูปละไม่เกิน 5MB (PNG, JPG, WEBP)</p>
               <input
                 ref={fileRef}
                 type="file"
-                accept="image/*"
+                accept="image/png, image/jpeg, image/webp"
                 multiple
                 className="hidden"
                 onChange={(e) => {
@@ -1001,6 +1314,10 @@ function blankUnit(): Unit {
     utilityRates: "",
     available: true,
     promoted: false,
+    electric_rate_type: "GOVERNMENT",
+    electric_rate: undefined,
+    water_rate_type: "GOVERNMENT",
+    water_rate: undefined,
   };
 }
 
@@ -1064,11 +1381,10 @@ function PromoteToggle({
     <>
       <button
         onClick={() => (promoted ? onUnpromote() : setOpen(true))}
-        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
-          promoted
+        className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${promoted
             ? "bg-primary text-primary-foreground"
             : "bg-muted text-muted-foreground hover:bg-muted/70"
-        }`}
+          }`}
       >
         <Sparkles className="h-3 w-3" />{" "}
         {promoted ? t("dashboard.promoted") : t("dashboard.promote")}

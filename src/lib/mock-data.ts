@@ -4,6 +4,7 @@ export type Listing = {
   price: number;
   location: string;
   propertyType?: string;
+  distance?: number;
   roomType: string;
   beds: number;
   baths: number;
@@ -36,6 +37,7 @@ export const listings: Listing[] = [
     price: 16000,
     location: "Ari, Bangkok",
     propertyType: "Condo",
+    distance: 0.3,
     roomType: "1 Bedroom",
     beds: 1,
     baths: 1,
@@ -74,6 +76,7 @@ export const listings: Listing[] = [
     price: 18500,
     location: "Ekkamai, Bangkok",
     propertyType: "Condo",
+    distance: 0.2,
     roomType: "Studio",
     beds: 1,
     baths: 1,
@@ -107,6 +110,7 @@ export const listings: Listing[] = [
     price: 20000,
     location: "Phrom Phong, Bangkok",
     propertyType: "Condo",
+    distance: 1.5,
     roomType: "1 Bedroom",
     beds: 1,
     baths: 1,
@@ -140,6 +144,7 @@ export const listings: Listing[] = [
     price: 32000,
     location: "On Nut, Bangkok",
     propertyType: "Condo",
+    distance: 0.8,
     roomType: "2 Bedroom",
     beds: 2,
     baths: 2,
@@ -172,6 +177,7 @@ export const listings: Listing[] = [
     price: 14500,
     location: "Thonglor, Bangkok",
     propertyType: "Apartment",
+    distance: 2.2,
     roomType: "Studio",
     beds: 1,
     baths: 1,
@@ -204,6 +210,7 @@ export const listings: Listing[] = [
     price: 17500,
     location: "Asoke, Bangkok",
     propertyType: "Condo",
+    distance: 0.1,
     roomType: "Studio",
     beds: 1,
     baths: 1,

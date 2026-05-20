@@ -76,7 +76,10 @@ export function PropertyCard({
           </div>
           <div className="flex items-center gap-1 text-xs text-muted-foreground">
             <MapPin className="h-3 w-3" />
-            <span>{listing.location}</span>
+            <span>
+              {listing.location}
+              {listing.distance !== undefined ? ` (${listing.distance} ${t("common.km")})` : ""}
+            </span>
             <span className="mx-1">·</span>
             <BedDouble className="h-3 w-3" />
             <span>{listing.roomType}</span>

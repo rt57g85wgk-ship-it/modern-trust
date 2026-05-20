@@ -20,6 +20,9 @@ import { Button } from "@/components/ui/button";
 import { listings } from "@/lib/mock-data";
 import { PropertyCard, PropertyCardSkeleton } from "@/components/PropertyCard";
 import { bestMatchIds, sortByMatchScore } from "@/lib/listing-match";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
+import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -76,12 +79,55 @@ function Landing() {
     date: "",
     budget: "any",
     room: "any",
+    propertyType: "any",
     pet: false,
     lease: "" as "" | "1y" | "under1y",
     amenities: [] as string[],
+    maxDistance: 99.0,
   });
   const [showMore, setShowMore] = useState(false);
   const [loading] = useState(false);
+  const [minPrice, maxPrice] = useMemo(() => {
+    if (q.budget === "any") return [0, 50000];
+    const [min, max] = q.budget.split("-").map(Number);
+    return [min ?? 0, max ?? 50000];
+  }, [q.budget]);
+
+  const [localRange, setLocalRange] = useState<[number, number]>([minPrice, maxPrice]);
+
+  useMemo(() => {
+    if (localRange[0] !== minPrice || localRange[1] !== maxPrice) {
+      setLocalRange([minPrice, maxPrice]);
+    }
+  }, [minPrice, maxPrice]);
+
+  const histogramData = useMemo(() => {
+    const bins: { price: number; count: number }[] = [];
+    const peak = 18000;
+    const stdDev = 8000;
+    for (let i = 0; i <= 25; i++) {
+      const price = i * 2000;
+      const exponent = -Math.pow(price - peak, 2) / (2 * Math.pow(stdDev, 2));
+      const count = Math.round(35 * Math.exp(exponent));
+      const adjustedCount = Math.max(1, count);
+      bins.push({ price, count: adjustedCount });
+    }
+    return bins;
+  }, []);
+
+  const handleSliderChange = (val: number[]) => {
+    if (val.length === 2) {
+      setLocalRange([val[0], val[1]]);
+      setQ((prev) => ({ ...prev, budget: `${val[0]}-${val[1]}` }));
+    }
+  };
+
+  const getBudgetLabel = (budget: string) => {
+    if (budget === "any") return t("landing.budgetAny");
+    const [min, max] = budget.split("-").map(Number);
+    if (min === 0 && max === 50000) return t("landing.budgetAny");
+    return `${min.toLocaleString()} - ${max >= 50000 ? "50,000+" : max.toLocaleString()} ฿`;
+  };
 
   const toggleAmenity = (a: string) =>
     setQ((prev) => ({
@@ -96,11 +142,13 @@ function Landing() {
       if (!l.available) return false;
       if (q.location && !l.location.toLowerCase().includes(q.location.toLowerCase())) return false;
       if (q.room !== "any" && l.roomType !== q.room) return false;
+      if (q.propertyType !== "any" && l.propertyType !== q.propertyType) return false;
       if (q.budget !== "any") {
         const [min, max] = q.budget.split("-").map(Number);
         if (l.price < min || (max && l.price > max)) return false;
       }
       if (q.pet && !l.amenities.includes("Pet Friendly")) return false;
+      if (q.maxDistance !== 99 && l.distance !== undefined && l.distance > q.maxDistance) return false;
       return true;
     });
   }, [q]);
@@ -177,31 +225,114 @@ function Landing() {
                 />
               </Field>
               <Field icon={<Wallet className="h-4 w-4" />} label={t("landing.searchBudget")}>
-                <select
-                  value={q.budget}
-                  onChange={(e) => setQ({ ...q, budget: e.target.value })}
-                  className="w-full bg-transparent text-sm outline-none"
-                >
-                  <option value="any">{t("landing.budgetAny")}</option>
-                  <option value="0-15000">{t("landing.budgetUnder15")}</option>
-                  <option value="15000-20000">{t("landing.budget1520")}</option>
-                  <option value="20000-30000">{t("landing.budget2030")}</option>
-                  <option value="30000-99999">{t("landing.budget30plus")}</option>
-                </select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className="w-full text-left bg-transparent text-sm outline-none flex items-center justify-between font-semibold text-foreground cursor-pointer"
+                    >
+                      <span>{getBudgetLabel(q.budget)}</span>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[340px] sm:w-[380px] p-5 rounded-2xl bg-card border shadow-xl space-y-4" align="start" sideOffset={12}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-foreground text-sm">{t("landing.priceRange")}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQ((prev) => ({ ...prev, budget: "any" }));
+                          setLocalRange([0, 50000]);
+                        }}
+                        className="text-xs text-blue-500 hover:text-blue-600 transition-colors underline font-medium cursor-pointer"
+                      >
+                        {t("landing.clear")}
+                      </button>
+                    </div>
+
+                    {/* Histogram chart */}
+                    <div className="h-20 w-full flex items-end px-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={histogramData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                          <Bar dataKey="count" radius={[2, 2, 0, 0]}>
+                            {histogramData.map((entry, index) => {
+                              const isActive = entry.price >= localRange[0] && entry.price <= localRange[1];
+                              return (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={isActive ? "#3b82f6" : "#e2e8f0"}
+                                  className="transition-colors duration-150"
+                                />
+                              );
+                            })}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Double thumb slider */}
+                    <div className="px-1">
+                      <Slider
+                        min={0}
+                        max={50000}
+                        step={1000}
+                        value={[localRange[0], localRange[1]]}
+                        onValueChange={handleSliderChange}
+                        className="w-full"
+                      />
+                    </div>
+
+                    {/* Min/Max input boxes */}
+                    <div className="flex items-center gap-3 pt-2">
+                      <div className="flex-1 rounded-xl border border-border bg-muted/20 px-3 py-2">
+                        <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t("landing.startPrice")}
+                        </span>
+                        <input
+                          type="number"
+                          value={localRange[0]}
+                          onChange={(e) => {
+                            const val = Math.max(0, Math.min(50000, Number(e.target.value) || 0));
+                            setLocalRange([val, localRange[1]]);
+                            setQ((prev) => ({ ...prev, budget: `${val}-${localRange[1]}` }));
+                          }}
+                          className="w-full bg-transparent text-sm font-semibold outline-none text-foreground"
+                        />
+                      </div>
+                      <span className="text-muted-foreground font-semibold">-</span>
+                      <div className="flex-1 rounded-xl border border-border bg-muted/20 px-3 py-2">
+                        <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t("landing.endPrice")}
+                        </span>
+                        <input
+                          type="number"
+                          value={localRange[1]}
+                          onChange={(e) => {
+                            const val = Math.max(localRange[0], Math.min(50000, Number(e.target.value) || 0));
+                            setLocalRange([localRange[0], val]);
+                            setQ((prev) => ({ ...prev, budget: `${localRange[0]}-${val}` }));
+                          }}
+                          className="w-full bg-transparent text-sm font-semibold outline-none text-foreground"
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </Field>
               <Field
                 icon={<HomeIcon className="h-4 w-4" />}
                 label={t("landing.searchPropertyType")}
               >
                 <select
-                  value={q.room}
-                  onChange={(e) => setQ({ ...q, room: e.target.value })}
+                  value={q.propertyType}
+                  onChange={(e) => setQ({ ...q, propertyType: e.target.value })}
                   className="w-full bg-transparent text-sm outline-none"
                 >
-                  <option value="any">{t("landing.roomAny")}</option>
-                  <option>{t("landing.roomStudio")}</option>
-                  <option>{t("landing.room1br")}</option>
-                  <option>{t("landing.room2br")}</option>
+                  <option value="any">{t("landing.propAny")}</option>
+                  <option value="Condo">{t("landing.propCondo")}</option>
+                  <option value="Apartment">{t("landing.propApartment")}</option>
+                  <option value="Dormitory">{t("landing.propDorm")}</option>
+                  <option value="House">{t("landing.propHouse")}</option>
                 </select>
               </Field>
               <Button
@@ -238,7 +369,7 @@ function Landing() {
                   transition={{ duration: 0.2 }}
                   className="overflow-hidden"
                 >
-                  <div className="grid gap-6 border-t border-border px-2 pb-2 pt-4 sm:px-3 md:grid-cols-3">
+                  <div className="grid gap-6 border-t border-border px-2 pb-2 pt-4 sm:px-3 md:grid-cols-4">
                     <div>
                       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         <HomeIcon className="h-3.5 w-3.5 text-primary" /> {t("landing.roomLayout")}
@@ -248,7 +379,6 @@ function Landing() {
                           { v: "Studio", label: t("landing.roomStudio") },
                           { v: "1 Bedroom", label: t("landing.room1br") },
                           { v: "2 Bedroom", label: t("landing.room2br") },
-                          { v: "3+ Bedroom", label: t("landing.room3br") },
                         ].map((opt) => (
                           <label
                             key={opt.v}
@@ -273,10 +403,10 @@ function Landing() {
                       </div>
                       <label className="flex cursor-pointer items-center gap-2 text-sm">
                         <input
-                          type="checkbox"
-                          checked={q.pet}
-                          onChange={(e) => setQ({ ...q, pet: e.target.checked })}
-                          className="h-3.5 w-3.5 accent-primary"
+                           type="checkbox"
+                           checked={q.pet}
+                           onChange={(e) => setQ({ ...q, pet: e.target.checked })}
+                           className="h-3.5 w-3.5 accent-primary"
                         />
                         {t("landing.petFriendlyOnly")}
                       </label>
@@ -305,6 +435,24 @@ function Landing() {
                             {opt.label}
                           </label>
                         ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 text-primary" /> {t("landing.maxDistance")}
+                      </div>
+                      <div className="relative">
+                        <select
+                          value={q.maxDistance}
+                          onChange={(e) => setQ({ ...q, maxDistance: Number(e.target.value) })}
+                          className="w-full rounded-xl border border-border bg-muted/20 hover:bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary focus:bg-background text-foreground transition-all font-semibold cursor-pointer appearance-none pr-8"
+                        >
+                          <option value={99.0}>{t("landing.distAny")}</option>
+                          <option value={1.0}>{t("landing.distClose")}</option>
+                          <option value={5.0}>{t("landing.distConvenient")}</option>
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 pointer-events-none opacity-50" />
                       </div>
                     </div>
                   </div>
@@ -566,7 +714,7 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex items-center gap-3 rounded-xl border border-transparent bg-muted/40 px-3 py-2 transition-colors focus-within:border-primary focus-within:bg-background">
+    <div className="flex items-center gap-3 rounded-xl border border-transparent bg-muted/40 px-3 py-2 transition-colors focus-within:border-primary focus-within:bg-background">
       <span className="text-muted-foreground">{icon}</span>
       <span className="flex-1">
         <span className="block text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -574,6 +722,6 @@ function Field({
         </span>
         {children}
       </span>
-    </label>
+    </div>
   );
 }
