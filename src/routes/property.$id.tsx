@@ -28,10 +28,17 @@ import {
 } from "@/lib/amenities";
 import { useApp } from "@/lib/app-context";
 import { slugify } from "@/lib/profiles";
+import { fetchSupabaseListingById } from "@/lib/supabase-listings";
 
 export const Route = createFileRoute("/property/$id")({
-  loader: ({ params }) => {
-    const listing = listings.find((l) => l.id === params.id);
+  loader: async ({ params }) => {
+    let listing = listings.find((l) => l.id === params.id);
+    if (!listing) {
+      const dbListing = await fetchSupabaseListingById(params.id);
+      if (dbListing) {
+        listing = dbListing;
+      }
+    }
     if (!listing) throw notFound();
     return { listing };
   },
@@ -61,7 +68,33 @@ function PropertyPage() {
   const petFriendly = listing.petFriendly ?? listing.amenities.includes("Pet Friendly");
   const minimumLease = listing.minimumLease ?? t("property.minimumLeaseFallback");
   const depositMonths = listing.depositMonths ?? 2;
-  const utilityRates = listing.utilityRates ?? t("property.utilityRatesFallback");
+  
+  // Dynamically format utility rates from database columns if present, otherwise use string fallback
+  let utilityRates = listing.utilityRates ?? t("property.utilityRatesFallback");
+  if (listing.electric_rate_type || listing.water_rate_type) {
+    let waterPart = "";
+    if (listing.water_rate_type === "GOVERNMENT") {
+      waterPart = t("property.waterGovRate");
+    } else if (listing.water_rate_type === "FIXED") {
+      waterPart = t("property.waterFixedRate", { rate: listing.water_rate });
+    }
+
+    let electricPart = "";
+    if (listing.electric_rate_type === "GOVERNMENT") {
+      electricPart = t("property.electricGovRate");
+    } else if (listing.electric_rate_type === "FIXED") {
+      electricPart = t("property.electricFixedRate", { rate: listing.electric_rate });
+    }
+
+    if (waterPart && electricPart) {
+      utilityRates = `${waterPart} · ${electricPart}`;
+    } else if (waterPart) {
+      utilityRates = waterPart;
+    } else if (electricPart) {
+      utilityRates = electricPart;
+    }
+  }
+
   const lineUrl = listing.landlord.lineUrl ?? "https://line.me/R/ti/p/@moderntrust";
 
   const amenityLabel = (amenity: string) => {

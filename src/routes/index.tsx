@@ -23,6 +23,8 @@ import { bestMatchIds, sortByMatchScore } from "@/lib/listing-match";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
+import { useQuery } from "@tanstack/react-query";
+import { fetchSupabaseListings } from "@/lib/supabase-listings";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -86,7 +88,17 @@ function Landing() {
     maxDistance: 99.0,
   });
   const [showMore, setShowMore] = useState(false);
-  const [loading] = useState(false);
+  const { data: dbListings = [], isLoading } = useQuery({
+    queryKey: ["supabase-listings"],
+    queryFn: fetchSupabaseListings,
+  });
+  const loading = isLoading;
+
+  const combinedListings = useMemo(() => {
+    const dbIds = new Set(dbListings.map((l) => l.id));
+    const uniqueMocks = listings.filter((l) => !dbIds.has(l.id));
+    return [...dbListings, ...uniqueMocks];
+  }, [dbListings]);
   const [minPrice, maxPrice] = useMemo(() => {
     if (q.budget === "any") return [0, 50000];
     const [min, max] = q.budget.split("-").map(Number);
@@ -138,7 +150,7 @@ function Landing() {
     }));
 
   const filtered = useMemo(() => {
-    return listings.filter((l) => {
+    return combinedListings.filter((l) => {
       if (!l.available) return false;
       if (q.location && !l.location.toLowerCase().includes(q.location.toLowerCase())) return false;
       if (q.room !== "any" && l.roomType !== q.room) return false;
@@ -151,7 +163,7 @@ function Landing() {
       if (q.maxDistance !== 99 && l.distance !== undefined && l.distance > q.maxDistance) return false;
       return true;
     });
-  }, [q]);
+  }, [combinedListings, q]);
 
   const matchIds = useMemo(() => bestMatchIds(filtered, q, 3), [filtered, q]);
 

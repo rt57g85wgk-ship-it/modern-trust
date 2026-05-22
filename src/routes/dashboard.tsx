@@ -59,6 +59,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
+import { mapDbRoomToUnit } from "@/lib/supabase-listings";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -434,12 +435,126 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
   const [editing, setEditing] = useState<Unit | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLandlordUnits = async () => {
+    try {
+      const owner_id = "00000000-0000-0000-0000-000000000000";
+      // Fetch buildings owned by this owner
+      const { data: buildings, error: bErr } = await supabase
+        .from("buildings")
+        .select("building_id")
+        .eq("owner_id", owner_id);
+
+      if (bErr) throw bErr;
+      if (!buildings || buildings.length === 0) {
+        setUnits(seedUnits);
+        return;
+      }
+
+      const buildingIds = buildings.map((b: any) => b.building_id);
+
+      // Fetch rooms in these buildings
+      const { data: rooms, error: rErr } = await supabase
+        .from("rooms")
+        .select(`
+          *,
+          buildings (
+            building_name,
+            address,
+            property_type,
+            latitude,
+            longitude,
+            zone_tag,
+            amenities_building
+          )
+        `)
+        .in("building_id", buildingIds);
+
+      if (rErr) throw rErr;
+
+      const mappedUnits = (rooms || []).map((room: any) => {
+        const building = Array.isArray(room.buildings) 
+          ? room.buildings[0] 
+          : room.buildings;
+        return mapDbRoomToUnit(room, building);
+      });
+
+      // Filter seed units that match any room_id from Supabase to prevent duplicates
+      const dbIds = new Set(mappedUnits.map((u) => u.id));
+      const uniqueSeed = seedUnits.filter((u) => !dbIds.has(u.id));
+      setUnits([...mappedUnits, ...uniqueSeed]);
+    } catch (err) {
+      console.error("Error loading landlord units:", err);
+      setUnits(seedUnits);
+    }
+  };
+
+  useEffect(() => {
+    fetchLandlordUnits().finally(() => setLoading(false));
+  }, []);
 
   const handleSave = async (u: Unit) => {
     try {
       const isExisting = exists(units, u.id);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
       
-      if (!isExisting) {
+      if (isExisting && isUuid) {
+        // Upload new images to Supabase Storage if any
+        const uploadedUrls: string[] = [];
+        const owner_id = "00000000-0000-0000-0000-000000000000";
+        if (u.imageFiles && u.imageFiles.length > 0) {
+          for (const file of u.imageFiles) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${owner_id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+              .from('room-images')
+              .upload(filePath, file);
+
+            if (uploadError) {
+              console.error("Upload error:", uploadError);
+              throw new Error(`อัปโหลดรูปภาพ ${file.name} ไม่สำเร็จ: ${uploadError.message}`);
+            }
+
+            const { data: publicUrlData } = supabase.storage
+              .from('room-images')
+              .getPublicUrl(filePath);
+
+            uploadedUrls.push(publicUrlData.publicUrl);
+          }
+        }
+
+        const existingRemoteUrls = u.images.filter(
+          (url) => !url.startsWith("blob:") && !url.includes("images.unsplash.com")
+        );
+        const finalImages = [...existingRemoteUrls, ...uploadedUrls];
+
+        // Update Room in Supabase
+        const { error: roomError } = await supabase
+          .from("rooms")
+          .update({
+            listing_title: u.title,
+            room_type: u.roomType === "Studio" ? "STUDIO" : u.roomType === "1 Bedroom" ? "1_BEDROOM" : "2_BEDROOM",
+            room_size_sqm: u.sizeValue,
+            status: u.available ? "AVAILABLE" : "OCCUPIED",
+            base_rent_monthly: u.price,
+            electric_rate_type: u.electric_rate_type || "GOVERNMENT",
+            electric_rate: parseFloat(String(u.electric_rate)) || 0,
+            water_rate_type: u.water_rate_type || "GOVERNMENT",
+            water_rate: parseFloat(String(u.water_rate)) || 0,
+            deposit_months: u.depositMonths,
+            min_contract_months: parseInt(u.minimumLease) || 12,
+            pet_friendly: u.petFriendly,
+            description: u.description,
+            amenities_in_room: u.amenities,
+            images: finalImages.length > 0 ? finalImages : u.images,
+          })
+          .eq("room_id", u.id);
+
+        if (roomError) throw roomError;
+      } else if (!isExisting) {
         const owner_id = "00000000-0000-0000-0000-000000000000";
 
         // Insert Building
@@ -518,10 +633,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         if (roomError) throw roomError;
       }
 
-      setUnits((arr) => {
-        if (isExisting) return arr.map((x) => (x.id === u.id ? u : x));
-        return [u, ...arr];
-      });
+      await fetchLandlordUnits();
       toast.success(isExisting ? t("dashboard.toastUpdated") : t("dashboard.toastAdded"));
       setEditing(null);
       setCreating(false);
@@ -531,11 +643,26 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
     }
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteId) return;
-    setUnits((arr) => arr.filter((x) => x.id !== deleteId));
-    toast.success(t("dashboard.toastDeleted"));
-    setDeleteId(null);
+    try {
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deleteId);
+      if (isUuid) {
+        const { error: rErr } = await supabase
+          .from("rooms")
+          .delete()
+          .eq("room_id", deleteId);
+
+        if (rErr) throw rErr;
+      }
+
+      setUnits((arr) => arr.filter((x) => x.id !== deleteId));
+      toast.success(t("dashboard.toastDeleted"));
+      setDeleteId(null);
+    } catch (error: any) {
+      console.error("Delete Error:", error);
+      toast.error(error.message || "Failed to delete listing from Supabase.");
+    }
   };
 
   const aiTips = [t("dashboard.aiTip1"), t("dashboard.aiTip2"), t("dashboard.aiTip3")];

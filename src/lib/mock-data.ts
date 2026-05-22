@@ -23,6 +23,10 @@ export type Listing = {
   minimumLease?: string;
   depositMonths?: 1 | 2;
   utilityRates?: string;
+  electric_rate_type?: "GOVERNMENT" | "FIXED";
+  electric_rate?: number | string;
+  water_rate_type?: "GOVERNMENT" | "FIXED";
+  water_rate?: number | string;
   description: string;
   landlord: { name: string; verified: boolean; avatar: string; lineUrl?: string };
 };
