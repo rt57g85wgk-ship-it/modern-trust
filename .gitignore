@@ -51,5 +51,5 @@ gpt-engineer-app/
 # 4. OS & Environment Files (ไฟล์ขยะของระบบปฏิบัติการและไฟล์เก็บความลับ)
 .DS_Store
 Thumbs.db
-.env
+# .env
 .env.local
