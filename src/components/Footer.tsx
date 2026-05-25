@@ -60,7 +60,7 @@ export function Footer() {
                 {col.links.map(([label, href]) =>
                   href.startsWith("/") ? (
                     <li key={label}>
-                      <Link to={href} className="text-muted-foreground hover:text-foreground">
+                      <Link to={href as any} className="text-muted-foreground hover:text-foreground">
                         {label}
                       </Link>
                     </li>

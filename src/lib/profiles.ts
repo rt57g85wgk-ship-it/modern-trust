@@ -1,4 +1,6 @@
 import { listings, type Listing } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
+import { mapDbRoomToListing } from "@/lib/supabase-listings";
 
 export type PublicProfile = {
   id: string;
@@ -118,4 +120,81 @@ export function getRenterProfile(id: string): PublicProfile | null {
 
 export function getProfileById(id: string): PublicProfile | null {
   return getLandlordProfile(id) ?? getRenterProfile(id);
+}
+
+export async function fetchSupabaseProfileById(userId: string): Promise<PublicProfile | null> {
+  try {
+    const { data: dbUser, error: uErr } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (uErr || !dbUser) {
+      console.error("Error fetching user profile:", uErr);
+      return null;
+    }
+
+    let ownedListings: Listing[] = [];
+    const role = dbUser.role === "OWNER" || dbUser.role === "LANDLORD" ? "landlord" : "renter";
+    
+    if (role === "landlord") {
+      const { data: buildings, error: bErr } = await supabase
+        .from("buildings")
+        .select("building_id")
+        .eq("owner_id", userId);
+
+      if (!bErr && buildings && buildings.length > 0) {
+        const buildingIds = buildings.map((b) => b.building_id);
+        const { data: rooms, error: rErr } = await supabase
+          .from("rooms")
+          .select(`
+            *,
+            buildings (
+              building_name,
+              address,
+              property_type,
+              latitude,
+              longitude,
+              zone_tag,
+              amenities_building,
+              owner_id,
+              users (
+                name,
+                is_verified,
+                email,
+                phone_number
+              )
+            )
+          `)
+          .in("building_id", buildingIds);
+
+        if (!rErr && rooms) {
+          ownedListings = rooms.map((room: any) => {
+            const building = Array.isArray(room.buildings)
+              ? room.buildings[0]
+              : room.buildings;
+            return mapDbRoomToListing(room, building);
+          });
+        }
+      }
+    }
+
+    return {
+      id: userId,
+      type: role,
+      name: dbUser.name || "Verified Landlord",
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(dbUser.name || "User")}`,
+      verified: !!dbUser.is_verified,
+      bio: "Verified user on Modern Trust.",
+      rating: 4.8,
+      reviewsCount: 0,
+      joined: new Date(dbUser.created_at || Date.now()).getFullYear().toString(),
+      reviews: [],
+      listings: ownedListings,
+    };
+  } catch (err) {
+    console.error("Catch error fetching supabase profile:", err);
+    return null;
+  }
 }

@@ -14,7 +14,7 @@ type Mode = "signin" | "signup";
 
 export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
   const { t } = useTranslation();
-  const { login } = useApp();
+  const { signIn, signUp } = useApp();
   const nav = useNavigate();
 
   const [name, setName] = useState("");
@@ -31,10 +31,12 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
     password: z.string().min(8, t("auth.errors.shortPassword")).max(128),
   });
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    console.log("Form submission started", { mode, email, name, role });
     const result = schema.safeParse({ name, email, password });
     if (!result.success) {
+      console.log("Form validation failed", result.error.issues);
       const fieldErrors: typeof errors = {};
       for (const issue of result.error.issues) {
         const k = issue.path[0] as keyof typeof errors;
@@ -45,16 +47,43 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
     }
     setErrors({});
     setPending(true);
-    // Mock auth — no backend yet
-    setTimeout(() => {
-      const finalName = mode === "signup"
-        ? name.trim()
-        : email.split("@")[0].replace(/[._-]/g, " ");
-      login({ name: finalName, email: email.trim(), role });
-      toast.success(t("auth.welcomeBack", { name: finalName }));
+
+    try {
+      console.log("Sending auth request to Supabase...");
+      if (mode === "signup") {
+        const { data, error } = await signUp(email.trim(), password, name.trim(), role);
+        console.log("Supabase signUp response:", { data, error });
+        if (error) {
+          toast.error(error.message);
+          setPending(false);
+          return;
+        }
+        
+        if (data?.session) {
+          toast.success(t("auth.welcomeBack", { name: name.trim() }));
+          void nav({ to: "/dashboard" });
+        } else {
+          toast.success("Registration successful! Please check your email to confirm your account.");
+          void nav({ to: "/login" });
+        }
+      } else {
+        const { data, error } = await signIn(email.trim(), password);
+        console.log("Supabase signIn response:", { data, error });
+        if (error) {
+          toast.error(error.message);
+          setPending(false);
+          return;
+        }
+        const displayName = data?.user?.user_metadata?.full_name || email.split("@")[0].replace(/[._-]/g, " ");
+        toast.success(t("auth.welcomeBack", { name: displayName }));
+        void nav({ to: "/dashboard" });
+      }
+    } catch (err: any) {
+      console.error("Auth submission crashed:", err);
+      toast.error(err.message || "An unexpected error occurred.");
+    } finally {
       setPending(false);
-      void nav({ to: "/dashboard" });
-    }, 400);
+    }
   };
 
   return (

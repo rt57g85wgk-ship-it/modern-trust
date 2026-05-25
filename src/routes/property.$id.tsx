@@ -32,15 +32,9 @@ import { fetchSupabaseListingById } from "@/lib/supabase-listings";
 
 export const Route = createFileRoute("/property/$id")({
   loader: async ({ params }) => {
-    let listing = listings.find((l) => l.id === params.id);
-    if (!listing) {
-      const dbListing = await fetchSupabaseListingById(params.id);
-      if (dbListing) {
-        listing = dbListing;
-      }
-    }
-    if (!listing) throw notFound();
-    return { listing };
+    const dbListing = await fetchSupabaseListingById(params.id);
+    if (!dbListing) throw notFound();
+    return { listing: dbListing };
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -114,7 +108,7 @@ function PropertyPage() {
       !(IN_UNIT_AMENITY_OPTIONS as readonly string[]).includes(amenity) &&
       !(BUILDING_AMENITY_OPTIONS as readonly string[]).includes(amenity),
   );
-  const landlordId = slugify(listing.landlord.name);
+  const landlordId = listing.landlord.id || slugify(listing.landlord.name) || "landlord";
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">

@@ -59,7 +59,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { mapDbRoomToUnit } from "@/lib/supabase-listings";
+import { mapDbRoomToUnit, fetchSupabaseListings } from "@/lib/supabase-listings";
+import { useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -200,7 +201,11 @@ function RenterView({
   onVerify: () => void;
 }) {
   const { t } = useTranslation();
-  const saved = listings.filter((l) => favorites.includes(l.id));
+  const { data: dbListings = [] } = useQuery({
+    queryKey: ["supabase-listings"],
+    queryFn: fetchSupabaseListings,
+  });
+  const saved = dbListings.filter((l) => favorites.includes(l.id));
 
   return (
     <div className="mt-8 space-y-8">
@@ -403,31 +408,7 @@ function roomTypeBedrooms(roomType: RoomTypeOption): number {
   return roomType === "2 Bedroom" ? 2 : 1;
 }
 
-const seedUnits: Unit[] = listings.slice(0, 4).map((l) => {
-  const imgs = [l.image, ...l.gallery].filter((url, i, arr) => arr.indexOf(url) === i);
-  return {
-    id: l.id,
-    title: l.title,
-    location: l.location,
-    propertyType: inferPropertyType(l.title),
-    roomType: toRoomType(l.roomType, l.beds),
-    bedrooms: l.beds,
-    bathrooms: l.baths,
-    sizeValue: l.sqm,
-    sizeUnit: "sqm" as SizeUnit,
-    price: l.price,
-    image: l.image,
-    images: imgs.length ? imgs : [l.image],
-    description: l.description,
-    amenities: l.amenities.filter((a) => a !== "Pet Friendly"),
-    petFriendly: l.amenities.includes("Pet Friendly"),
-    minimumLease: "12 months",
-    depositMonths: 2,
-    utilityRates: "Water ฿18/unit · Electricity ฿7/unit",
-    available: l.available,
-    promoted: !!l.promoted,
-  };
-});
+const seedUnits: Unit[] = [];
 
 function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();

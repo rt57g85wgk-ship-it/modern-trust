@@ -16,6 +16,7 @@ import { AppProvider } from "@/lib/app-context";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ChatWidget } from "@/components/ChatWidget";
+import { Toaster } from "@/components/ui/sonner";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID?.trim() ?? "";
 
@@ -117,6 +118,7 @@ function AppLayout() {
         </main>
         <Footer />
         <ChatWidget />
+        <Toaster />
       </div>
     </AppProvider>
   );

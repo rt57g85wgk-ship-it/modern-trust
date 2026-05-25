@@ -169,12 +169,21 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
     water_rate_type: room.water_rate_type,
     water_rate: room.water_rate,
     description: room.description || "",
-    landlord: {
-      name: "Verified Landlord",
-      verified: true,
-      avatar: "https://i.pravatar.cc/100?img=12",
-      lineUrl: "https://line.me/R/ti/p/@moderntrust",
-    }
+    landlord: (() => {
+      const landlordUser = Array.isArray(building?.users)
+        ? building.users[0]
+        : building?.users;
+      const landlordName = landlordUser?.name || "Verified Landlord";
+      const landlordVerified = landlordUser?.is_verified ?? true;
+      const landlordAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(landlordName)}`;
+      return {
+        id: building?.owner_id || undefined,
+        name: landlordName,
+        verified: landlordVerified,
+        avatar: landlordAvatar,
+        lineUrl: landlordUser?.phone_number ? `tel:${landlordUser.phone_number}` : "https://line.me/R/ti/p/@moderntrust",
+      };
+    })()
   };
 }
 
@@ -239,7 +248,14 @@ export async function fetchSupabaseListings(): Promise<Listing[]> {
           latitude,
           longitude,
           zone_tag,
-          amenities_building
+          amenities_building,
+          owner_id,
+          users (
+            name,
+            is_verified,
+            email,
+            phone_number
+          )
         )
       `);
 
@@ -278,7 +294,14 @@ export async function fetchSupabaseListingById(id: string): Promise<Listing | nu
           latitude,
           longitude,
           zone_tag,
-          amenities_building
+          amenities_building,
+          owner_id,
+          users (
+            name,
+            is_verified,
+            email,
+            phone_number
+          )
         )
       `)
       .eq("room_id", id)

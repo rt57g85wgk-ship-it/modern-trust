@@ -11,13 +11,21 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getProfileById, type PublicProfile, slugify } from "@/lib/profiles";
+import { getProfileById, type PublicProfile, slugify, fetchSupabaseProfileById } from "@/lib/profiles";
 import { useApp } from "@/lib/app-context";
 
 export const Route = createFileRoute("/profile/$id")({
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     // "me" is handled in the component using the live user context.
     if (params.id === "me") return { profile: null as PublicProfile | null, isMe: true };
+    
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(params.id);
+    if (isUuid) {
+      const profile = await fetchSupabaseProfileById(params.id);
+      if (!profile) throw notFound();
+      return { profile, isMe: false };
+    }
+    
     const profile = getProfileById(params.id);
     if (!profile) throw notFound();
     return { profile, isMe: false };

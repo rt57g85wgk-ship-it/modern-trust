@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Search,
@@ -13,6 +13,8 @@ import {
   ArrowRight,
   Star,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   PawPrint,
   FileText,
 } from "lucide-react";
@@ -95,9 +97,7 @@ function Landing() {
   const loading = isLoading;
 
   const combinedListings = useMemo(() => {
-    const dbIds = new Set(dbListings.map((l) => l.id));
-    const uniqueMocks = listings.filter((l) => !dbIds.has(l.id));
-    return [...dbListings, ...uniqueMocks];
+    return dbListings;
   }, [dbListings]);
   const [minPrice, maxPrice] = useMemo(() => {
     if (q.budget === "any") return [0, 50000];
@@ -180,6 +180,21 @@ function Landing() {
     () => filtered.filter((l) => !(l.promoted && l.available)),
     [filtered],
   );
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [q, combinedListings]);
+
+  const itemsPerPage = 12;
+  const totalPages = Math.ceil(browseListings.length / itemsPerPage);
+
+  const paginatedBrowseListings = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return browseListings.slice(start, start + itemsPerPage);
+  }, [browseListings, currentPage]);
+
 
   const testimonials = [
     {
@@ -584,24 +599,71 @@ function Landing() {
                     {recommendedForYou.length > 0 && t("landing.matchingPromotedNote")}
                   </p>
                 </div>
-                <Link
-                  to="/"
-                  className="hidden shrink-0 text-sm font-medium text-primary hover:underline sm:inline"
-                >
-                  {t("common.viewAll")}
-                </Link>
               </div>
               <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {browseListings.length === 0 ? (
+                {paginatedBrowseListings.length === 0 ? (
                   <div className="col-span-full rounded-2xl border border-dashed border-border bg-muted/20 p-10 text-center text-sm text-muted-foreground">
                     {t("landing.allInRecommended")}
                   </div>
                 ) : (
-                  browseListings.map((l, i) => (
+                  paginatedBrowseListings.map((l, i) => (
                     <PropertyCard key={l.id} listing={l} index={i} bestMatch={matchIds.has(l.id)} />
                   ))
                 )}
               </div>
+
+              {totalPages > 1 && (
+                <div className="mt-12 flex items-center justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setCurrentPage((p) => Math.max(1, p - 1));
+                      document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    disabled={currentPage === 1}
+                    className="h-10 w-10 rounded-xl border border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  {Array.from({ length: totalPages }).map((_, idx) => {
+                    const pageNum = idx + 1;
+                    const isActive = currentPage === pageNum;
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => {
+                          setCurrentPage(pageNum);
+                          document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                        }}
+                        className={`h-10 min-w-10 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 ${
+                          isActive
+                            ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                            : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => {
+                      setCurrentPage((p) => Math.min(totalPages, p + 1));
+                      document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }}
+                    disabled={currentPage === totalPages}
+                    className="h-10 w-10 rounded-xl border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         )}
