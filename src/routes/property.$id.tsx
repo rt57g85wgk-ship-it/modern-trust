@@ -20,7 +20,6 @@ import {
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listings } from "@/lib/mock-data";
 import {
   AMENITY_I18N_KEY,
   BUILDING_AMENITY_OPTIONS,
@@ -29,6 +28,14 @@ import {
 import { useApp } from "@/lib/app-context";
 import { slugify } from "@/lib/profiles";
 import { fetchSupabaseListingById } from "@/lib/supabase-listings";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/property/$id")({
   loader: async ({ params }) => {
@@ -54,8 +61,8 @@ function PropertyPage() {
   const { t } = useTranslation();
   const fav = favorites.includes(listing.id);
   const [active, setActive] = useState(0);
-  const [booked, setBooked] = useState(false);
   const [date, setDate] = useState("");
+  const [contactOpen, setContactOpen] = useState(false);
 
   const sqLabel = `${listing.sqm} ${t("property.sqm")}`;
   const propertyType = listing.propertyType ?? "Condo";
@@ -90,6 +97,11 @@ function PropertyPage() {
   }
 
   const lineUrl = listing.landlord.lineUrl ?? "https://line.me/R/ti/p/@moderntrust";
+
+  const openLine = () => {
+    if (typeof window === "undefined") return;
+    window.open(lineUrl, "_blank", "noopener,noreferrer");
+  };
 
   const amenityLabel = (amenity: string) => {
     const slug = AMENITY_I18N_KEY[amenity as keyof typeof AMENITY_I18N_KEY];
@@ -321,58 +333,85 @@ function PropertyPage() {
                 <Star className="h-3.5 w-3.5 fill-warning text-warning" /> {listing.rating}
               </span>
             </div>
-            <div className="mt-5 space-y-3">
-              <label className="block">
-                <span className="text-xs font-medium text-muted-foreground">
-                  {t("property.moveIn")}
-                </span>
-                <div className="mt-1 flex items-center gap-2 rounded-lg border border-input bg-background px-3 py-2.5">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full bg-transparent text-sm outline-none"
-                  />
-                </div>
-              </label>
-            </div>
             <Button
-              className="mt-5 w-full"
+              className="mt-5 w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
               size="lg"
-              disabled={!listing.available || booked}
-              onClick={() => setBooked(true)}
+              disabled={!listing.available}
+              onClick={() => setContactOpen(true)}
+              style={{ backgroundColor: "#06C755", color: "white" }}
             >
-              {booked
-                ? t("property.requestSent")
-                : listing.available
-                  ? t("property.bookNow")
-                  : t("property.unavailableCta")}
-            </Button>
-            <Button asChild variant="outline" className="mt-3 w-full gap-2" size="lg">
-              <a href={lineUrl} target="_blank" rel="noreferrer">
-                <MessageCircle className="h-4 w-4" />
-                {t("property.contactLine")}
-              </a>
+              <MessageCircle className="h-6 w-6" />
+              Contact Landlord
             </Button>
             <p className="mt-3 text-center text-xs text-muted-foreground">
               {t("property.bookingNote")}
             </p>
-            <AnimatePresence>
-              {booked && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="mt-4 rounded-lg bg-success/10 p-3 text-sm text-success"
-                >
-                  <Check className="mr-1 inline h-4 w-4" /> {t("property.bookingSuccess")}
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </aside>
       </div>
+
+      <Dialog open={contactOpen} onOpenChange={setContactOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("property.contactTitle")}</DialogTitle>
+            <DialogDescription>{t("property.contactDesc")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 p-3">
+            <img
+              src={listing.landlord.avatar}
+              alt=""
+              className="h-12 w-12 rounded-full object-cover"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <span className="truncate font-semibold">{listing.landlord.name}</span>
+                {listing.landlord.verified && <ShieldCheck className="h-4 w-4 text-primary" />}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {propertyType} · {listing.roomType} · {sqLabel}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3 mt-4">
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground mb-1">เบอร์โทรศัพท์</p>
+              <p className="font-medium">{listing.landlord.phone || "081-234-5678"}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <p className="text-xs text-muted-foreground mb-1">Line ID</p>
+              <p className="font-medium">{listing.landlord.lineId || "@moderntrust"}</p>
+            </div>
+            <div className="flex justify-center">
+              <div className="bg-white p-4 rounded-xl border border-border">
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(lineUrl)}`}
+                  alt="Line QR Code"
+                  className="w-36 h-36 object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2 mt-4">
+            <Button variant="outline" onClick={() => setContactOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              className="gap-2 rounded-xl py-5 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
+              onClick={() => {
+                setContactOpen(false);
+                openLine();
+              }}
+              style={{ backgroundColor: "#06C755", color: "white" }}
+            >
+              <MessageCircle className="h-5 w-5" />
+              Open Line
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -44,13 +44,18 @@ type Ctx = {
   theme: "light" | "dark";
   login: (u: NonNullable<User>) => void;
   logout: () => Promise<void>;
-  signUp: (email: string, password: string, name: string, role: Role) => Promise<{ data: any; error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    role: Role,
+  ) => Promise<{ data: any; error: any }>;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
   toggleFavorite: (id: string) => void;
   toggleTheme: () => void;
   toggleLang: () => void;
   switchRole: () => void;
-  verifyIdentity: (idCardNumber: string) => void;
+  verifyIdentity: (idCardNumber?: string) => void;
   updateProfile: (patch: Partial<UserProfile>) => void;
   addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => void;
   removePaymentMethod: (id: string) => void;
@@ -313,9 +318,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     persist({ ...user, role: user.role === "renter" ? "landlord" : "renter" });
   };
-  const verifyIdentity = (idCardNumber: string) => {
+  const verifyIdentity = (idCardNumber?: string) => {
     if (!user) return;
-    persist({ ...user, verified: true, idCardNumber });
+    persist({
+      ...user,
+      verified: true,
+      idCardNumber: idCardNumber ?? user.idCardNumber,
+    });
   };
   const updateProfile = (patch: Partial<UserProfile>) => {
     if (!user) return;

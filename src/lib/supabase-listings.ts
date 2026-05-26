@@ -176,12 +176,17 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
       const landlordName = landlordUser?.name || "Verified Landlord";
       const landlordVerified = landlordUser?.is_verified ?? true;
       const landlordAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(landlordName)}`;
+      const landlordPhone = landlordUser?.phone_number || "081-234-5678";
+      const landlordLineId = "@moderntrust";
+      const landlordLineUrl = "https://line.me/R/ti/p/@moderntrust";
       return {
         id: building?.owner_id || undefined,
         name: landlordName,
         verified: landlordVerified,
         avatar: landlordAvatar,
-        lineUrl: landlordUser?.phone_number ? `tel:${landlordUser.phone_number}` : "https://line.me/R/ti/p/@moderntrust",
+        phone: landlordPhone,
+        lineId: landlordLineId,
+        lineUrl: landlordLineUrl,
       };
     })()
   };

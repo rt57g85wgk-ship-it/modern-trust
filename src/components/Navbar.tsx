@@ -66,11 +66,6 @@ export function Navbar() {
               <User className="h-4 w-4" /> My profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/account" className="gap-2">
-              <Settings className="h-4 w-4" /> Account settings
-            </Link>
-          </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => logout()} className="gap-2 text-destructive focus:text-destructive">
             <LogOut className="h-4 w-4" /> {t("nav.signOut")}
           </DropdownMenuItem>
@@ -95,15 +90,17 @@ export function Navbar() {
           <Logo />
         </Link>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-3 sm:flex">
           {user && (
-            <Link to="/">
-              <Button size="sm">{t("nav.discover")}</Button>
+            <Link to="/dashboard">
+              <Button className="gap-2 px-4 py-2 rounded-xl font-semibold shadow-md hover:shadow-xl hover:scale-[1.02] transition-all">
+                <LayoutDashboard className="h-4 w-4" /> My Dashboard
+              </Button>
             </Link>
           )}
           {!user && (
             <Link to="/login">
-              <Button size="sm">{t("nav.getStarted")}</Button>
+              <Button>{t("nav.getStarted")}</Button>
             </Link>
           )}
           <DropdownMenu>
@@ -118,7 +115,18 @@ export function Navbar() {
           </DropdownMenu>
         </div>
 
-        <div className="md:hidden">
+        <div className="sm:hidden flex items-center gap-2">
+          {user && (
+            <Link to="/dashboard">
+              <Button 
+                className="h-9 w-9 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-all"
+                variant="ghost" 
+                size="icon"
+              >
+                <LayoutDashboard className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -139,9 +147,9 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="border-t border-border/60 bg-background md:hidden"
+            className="border-t border-border/60 bg-background sm:hidden"
           >
-            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
+            <div className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3">
               <button
                 onClick={toggleLang}
                 className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -161,20 +169,13 @@ export function Navbar() {
               {user ? (
                 <>
                   <Link
-                    to="/"
+                    to="/dashboard"
                     onClick={() => setMobileOpen(false)}
                     className="block"
                   >
-                    <Button size="lg" className="mt-1 w-full">
-                      {t("nav.discover")}
+                    <Button size="lg" className="mt-1 w-full gap-2 shadow-md hover:shadow-lg transition-all">
+                      <LayoutDashboard className="h-4 w-4" /> My Dashboard
                     </Button>
-                  </Link>
-                  <Link
-                    to="/dashboard"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <LayoutDashboard className="h-4 w-4" /> {t("nav.dashboard")}
                   </Link>
                   <Link
                     to="/profile/$id"
@@ -183,13 +184,6 @@ export function Navbar() {
                     className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   >
                     <User className="h-4 w-4" /> My profile
-                  </Link>
-                  <Link
-                    to="/account"
-                    onClick={() => setMobileOpen(false)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-                  >
-                    <Settings className="h-4 w-4" /> Account settings
                   </Link>
                   <button
                     onClick={() => {

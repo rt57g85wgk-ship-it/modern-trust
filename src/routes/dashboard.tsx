@@ -418,9 +418,18 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const requireOwnerId = async (): Promise<string> => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const ownerId = session?.user?.id;
+    if (!ownerId) throw new Error("กรุณาเข้าสู่ระบบก่อนใช้งานส่วนเจ้าของห้อง");
+    return ownerId;
+  };
+
   const fetchLandlordUnits = async () => {
     try {
-      const owner_id = "00000000-0000-0000-0000-000000000000";
+      const owner_id = await requireOwnerId();
       // Fetch buildings owned by this owner
       const { data: buildings, error: bErr } = await supabase
         .from("buildings")
@@ -479,11 +488,11 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
     try {
       const isExisting = exists(units, u.id);
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
+      const owner_id = await requireOwnerId();
       
       if (isExisting && isUuid) {
         // Upload new images to Supabase Storage if any
         const uploadedUrls: string[] = [];
-        const owner_id = "00000000-0000-0000-0000-000000000000";
         if (u.imageFiles && u.imageFiles.length > 0) {
           for (const file of u.imageFiles) {
             const fileExt = file.name.split('.').pop();
@@ -536,8 +545,6 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
 
         if (roomError) throw roomError;
       } else if (!isExisting) {
-        const owner_id = "00000000-0000-0000-0000-000000000000";
-
         // Insert Building
         const { data: buildingData, error: buildingError } = await supabase
           .from("buildings")
@@ -779,11 +786,46 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         </div>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="rounded-2xl border border-border bg-card p-6">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="font-semibold">{t("dashboard.profile")}</h2>
+          <div className="mt-4 space-y-3 text-sm">
+            <Row
+              label={t("dashboard.verification")}
+              value={
+                verified ? (
+                  <span className="flex items-center gap-1 text-success">
+                    <BadgeCheck className="h-3.5 w-3.5" /> {t("dashboard.verified")}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">{t("dashboard.unverified")}</span>
+                )
+              }
+            />
+            <Row label={t("dashboard.memberSince")} value="2026" />
+            <Row label={t("dashboard.bookings")} value="3" />
+            <Row label={t("dashboard.reviewsLeft")} value="2" />
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Link to="/profile/$id" params={{ id: "me" }} className="flex-1">
+              <Button variant="outline" size="sm" className="w-full">
+                View public profile
+              </Button>
+            </Link>
+            <Link to="/account" className="flex-1">
+              <Button size="sm" className="w-full">
+                {t("dashboard.editProfile")}
+              </Button>
+            </Link>
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-1">
         <section className="rounded-2xl border border-border bg-card p-6">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
