@@ -56,8 +56,8 @@ type Ctx = {
   toggleTheme: () => void;
   toggleLang: () => void;
   switchRole: () => void;
-  verifyIdentity: (idCardNumber?: string, idCardImageUrl?: string) => void;
-  updateProfile: (patch: Partial<UserProfile>) => void;
+  verifyIdentity: (idCardNumber?: string, idCardImageUrl?: string) => Promise<void>;
+  updateProfile: (patch: Partial<UserProfile>) => Promise<void>;
   addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => void;
   removePaymentMethod: (id: string) => void;
 };
@@ -239,7 +239,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { error: authError } = await supabase.auth.updateUser({ data: metadataPatch });
         if (authError) {
           console.error("Error updating Supabase auth metadata:", authError);
-          toast.error(`Auth Error: ${authError.message}`);
+          throw new Error(`Auth Error: ${authError.message}`);
         } else {
           console.log("Auth metadata updated successfully.");
         }
@@ -254,16 +254,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           is_verified: next.verified || false,
           email: next.email,
         };
-        console.log("Upserting DB users table row with patch:", dbPatch);
+        console.log("Updating DB users table row with patch:", dbPatch);
         const { error: dbError } = await supabase
           .from("users")
-          .upsert(dbPatch, { onConflict: "user_id" });
+          .update(dbPatch)
+          .eq("user_id", session.user.id);
         
         if (dbError) {
           console.error("Error updating Supabase 'users' table:", dbError);
-          toast.error(`Database Error: ${dbError.message}`);
+          throw new Error(`Database Error: ${dbError.message}`);
         } else {
-          console.log("Database users table row upserted successfully.");
+          console.log("Database users table row updated successfully.");
         }
       } else {
         console.warn("No active Supabase session; skipping DB/Auth synchronization.");
@@ -325,18 +326,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     persist({ ...user, role: user.role === "renter" ? "landlord" : "renter" });
   };
-  const verifyIdentity = (idCardNumber?: string, idCardImageUrl?: string) => {
+  const verifyIdentity = async (idCardNumber?: string, idCardImageUrl?: string) => {
     if (!user) return;
-    persist({
+    await persist({
       ...user,
       verified: true,
       idCardNumber: idCardNumber ?? user.idCardNumber,
       idCardImageUrl: idCardImageUrl ?? user.idCardImageUrl,
     });
   };
-  const updateProfile = (patch: Partial<UserProfile>) => {
+  const updateProfile = async (patch: Partial<UserProfile>) => {
     if (!user) return;
-    persist({ ...user, ...patch });
+    await persist({ ...user, ...patch });
   };
   const addPaymentMethod = (pm: Omit<PaymentMethod, "id">) => {
     if (!user) return;

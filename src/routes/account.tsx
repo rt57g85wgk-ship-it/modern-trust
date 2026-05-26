@@ -121,7 +121,7 @@ function ProfileTab({
 }: {
   user: ReturnType<typeof useApp>["user"];
   onSave: ReturnType<typeof useApp>["updateProfile"];
-  onVerify: (idCardNumber?: string, idCardImageUrl?: string) => void;
+  onVerify: (idCardNumber?: string, idCardImageUrl?: string) => Promise<void>;
 }) {
   const u = user!;
   const [name, setName] = useState(u.name);
@@ -190,7 +190,7 @@ function ProfileTab({
       console.log("Uploaded file public URL:", imageUrl);
 
       // 3. Call context verifyIdentity to update users table and auth metadata
-      onVerify(idCardNumber, imageUrl);
+      await onVerify(idCardNumber, imageUrl);
       toast.success("Identity verified successfully!");
     } catch (err: any) {
       console.error("Verification error:", err);
