@@ -25,6 +25,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useApp } from "@/lib/app-context";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/account")({
   component: AccountPage,
@@ -120,7 +121,7 @@ function ProfileTab({
 }: {
   user: ReturnType<typeof useApp>["user"];
   onSave: ReturnType<typeof useApp>["updateProfile"];
-  onVerify: (idCardNumber?: string) => void;
+  onVerify: (idCardNumber?: string, idCardImageUrl?: string) => void;
 }) {
   const u = user!;
   const [name, setName] = useState(u.name);
@@ -129,6 +130,9 @@ function ProfileTab({
   const [preferredArea, setPreferredArea] = useState(u.preferredArea ?? "");
   const [moveInTimeline, setMoveInTimeline] = useState(u.moveInTimeline ?? "");
   const [tags, setTags] = useState<string[]>(u.lifestyleTags ?? []);
+  const [idCardNumber, setIdCardNumber] = useState(u.idCardNumber ?? "");
+  const [idCardFile, setIdCardFile] = useState<File | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
     setName(u.name);
@@ -137,9 +141,64 @@ function ProfileTab({
     setPreferredArea(u.preferredArea ?? "");
     setMoveInTimeline(u.moveInTimeline ?? "");
     setTags(u.lifestyleTags ?? []);
+    setIdCardNumber(u.idCardNumber ?? "");
+    setIdCardFile(null);
   }, [user]);
   const fileRef = useRef<HTMLInputElement>(null);
   const idRef = useRef<HTMLInputElement>(null);
+
+  const handleVerifySubmit = async () => {
+    if (idCardNumber.length !== 13) {
+      toast.error("Please enter a valid 13-digit ID card number.");
+      return;
+    }
+    if (!idCardFile) {
+      toast.error("Please select your ID card image to upload.");
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (!userId) {
+        toast.error("Session not found. Please log in again.");
+        return;
+      }
+
+      // 1. Upload file to Supabase Storage
+      const fileExt = idCardFile.name.split(".").pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${userId}/${fileName}`;
+
+      console.log("Uploading ID file to user-documents storage path:", filePath);
+      const { error: uploadError } = await supabase.storage
+        .from("user-documents")
+        .upload(filePath, idCardFile);
+
+      if (uploadError) {
+        console.error("Storage upload error:", uploadError);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      // 2. Get Public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("user-documents")
+        .getPublicUrl(filePath);
+
+      const imageUrl = publicUrlData.publicUrl;
+      console.log("Uploaded file public URL:", imageUrl);
+
+      // 3. Call context verifyIdentity to update users table and auth metadata
+      onVerify(idCardNumber, imageUrl);
+      toast.success("Identity verified successfully!");
+    } catch (err: any) {
+      console.error("Verification error:", err);
+      toast.error(err.message || "Failed to submit identity verification.");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   const onFile = (files: FileList | null) => {
     if (!files?.[0]) return;
@@ -278,29 +337,79 @@ function ProfileTab({
             : "Upload a government-issued ID to earn a verified badge."}
         </p>
 
-        {!u.verified && (
-          <div className="mt-4">
+        {u.verified ? (
+          <div className="mt-4 space-y-4 max-w-sm">
+            <Field label="ID Card Number">
+              <Input
+                value={u.idCardNumber ? `${u.idCardNumber.slice(0, 3)}XXXXXXXX${u.idCardNumber.slice(-2)}` : "—"}
+                disabled
+                className="bg-muted"
+              />
+            </Field>
+            {u.idCardImageUrl && (
+              <div className="mt-2">
+                <Label className="text-xs font-medium text-muted-foreground">Uploaded ID Image</Label>
+                <div className="mt-1 aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+                  <img src={u.idCardImageUrl} alt="Uploaded ID" className="h-full w-full object-cover" />
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="mt-4 space-y-4 max-w-sm">
+            <Field label="ID Card Number (13 digits)">
+              <Input
+                value={idCardNumber}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 13);
+                  setIdCardNumber(val);
+                }}
+                placeholder="e.g. 1100100123456"
+                maxLength={13}
+                disabled={isVerifying}
+              />
+            </Field>
+
+            <div>
+              <Label className="text-xs font-medium text-muted-foreground">ID Card Image</Label>
+              <div className="mt-1 flex flex-col gap-2">
+                <div className="flex items-center gap-2">
+                  <Button
+                    className="gap-2"
+                    variant="outline"
+                    type="button"
+                    disabled={isVerifying}
+                    onClick={() => idRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" /> Select ID Image
+                  </Button>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {idCardFile ? idCardFile.name : "No file selected"}
+                  </span>
+                </div>
+                <input
+                  ref={idRef}
+                  type="file"
+                  accept="image/*,application/pdf"
+                  className="hidden"
+                  disabled={isVerifying}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setIdCardFile(file);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
             <Button
-              className="gap-2"
-              variant="outline"
-              onClick={() => {
-                idRef.current?.click();
-              }}
+              className="w-full gap-2 mt-4"
+              onClick={handleVerifySubmit}
+              disabled={isVerifying}
             >
-              <Upload className="h-4 w-4" /> Upload ID
+              {isVerifying ? "Verifying..." : "Submit Verification"}
             </Button>
-            <input
-              ref={idRef}
-              type="file"
-              accept="image/*,application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                if (!e.target.files?.[0]) return;
-                onVerify();
-                toast.success("ID received — your account is verified.");
-                e.target.value = "";
-              }}
-            />
           </div>
         )}
       </section>

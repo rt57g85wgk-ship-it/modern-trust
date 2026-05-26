@@ -313,14 +313,8 @@ function RenterView({
   );
 }
 
-function VerificationPanel({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
+function VerificationPanel({ verified }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const handleFile = (files: FileList | null) => {
-    if (!files || !files.length) return;
-    onVerify();
-    toast.success(t("dashboard.verifySuccess"));
-  };
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -336,21 +330,11 @@ function VerificationPanel({ verified, onVerify }: { verified: boolean; onVerify
         {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
       </p>
       {!verified && (
-        <>
-          <Button className="mt-4 gap-2" onClick={() => inputRef.current?.click()}>
-            <Upload className="h-4 w-4" /> {t("dashboard.uploadId")}
+        <Link to="/account">
+          <Button className="mt-4 gap-2">
+            <Upload className="h-4 w-4" /> Complete Verification
           </Button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*,application/pdf"
-            className="hidden"
-            onChange={(e) => {
-              handleFile(e.target.files);
-              e.target.value = "";
-            }}
-          />
-        </>
+        </Link>
       )}
     </div>
   );

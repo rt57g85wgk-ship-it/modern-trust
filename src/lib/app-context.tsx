@@ -22,6 +22,7 @@ export type UserProfile = {
   bio?: string;
   phone?: string;
   idCardNumber?: string;
+  idCardImageUrl?: string;
   // Renter extras
   preferredArea?: string;
   moveInTimeline?: string;
@@ -55,7 +56,7 @@ type Ctx = {
   toggleTheme: () => void;
   toggleLang: () => void;
   switchRole: () => void;
-  verifyIdentity: (idCardNumber?: string) => void;
+  verifyIdentity: (idCardNumber?: string, idCardImageUrl?: string) => void;
   updateProfile: (patch: Partial<UserProfile>) => void;
   addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => void;
   removePaymentMethod: (id: string) => void;
@@ -109,6 +110,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           bio: metadata.bio || "",
           phone: metadata.phone || "",
           idCardNumber: metadata.idCardNumber || "",
+          idCardImageUrl: metadata.idCardImageUrl || "",
           preferredArea: metadata.preferredArea || "",
           moveInTimeline: metadata.moveInTimeline || "",
           lifestyleTags: metadata.lifestyleTags || [],
@@ -134,9 +136,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 role: mapDbRoleToFrontend(dbUser.role || metadata.role),
                 verified: dbUser.is_verified ?? !!metadata.verified,
                 avatar: metadata.avatar || "",
-                bio: metadata.bio || "",
+                bio: dbUser.bio || metadata.bio || "",
                 phone: dbUser.phone_number || metadata.phone || "",
                 idCardNumber: dbUser.id_card_number || metadata.idCardNumber || "",
+                idCardImageUrl: dbUser.id_card_image_url || metadata.idCardImageUrl || "",
                 preferredArea: metadata.preferredArea || "",
                 moveInTimeline: metadata.moveInTimeline || "",
                 lifestyleTags: metadata.lifestyleTags || [],
@@ -151,6 +154,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 role: mapFrontendRoleToDb(profile.role),
                 phone_number: profile.phone || null,
                 id_card_number: profile.idCardNumber || null,
+                id_card_image_url: profile.idCardImageUrl || null,
                 is_verified: profile.verified || false,
               };
               console.log("Inserting new row into 'users' table:", newDbUser);
@@ -179,6 +183,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               bio: metadata.bio || localUser.bio,
               phone: metadata.phone || localUser.phone,
               idCardNumber: metadata.idCardNumber || localUser.idCardNumber,
+              idCardImageUrl: metadata.idCardImageUrl || localUser.idCardImageUrl,
             };
           }
         }
@@ -225,6 +230,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           bio: next.bio,
           phone: next.phone,
           idCardNumber: next.idCardNumber,
+          idCardImageUrl: next.idCardImageUrl,
           preferredArea: next.preferredArea,
           moveInTimeline: next.moveInTimeline,
           lifestyleTags: next.lifestyleTags,
@@ -244,6 +250,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           role: mapFrontendRoleToDb(next.role),
           phone_number: next.phone || null,
           id_card_number: next.idCardNumber || null,
+          id_card_image_url: next.idCardImageUrl || null,
           is_verified: next.verified || false,
           email: next.email,
         };
@@ -318,12 +325,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     persist({ ...user, role: user.role === "renter" ? "landlord" : "renter" });
   };
-  const verifyIdentity = (idCardNumber?: string) => {
+  const verifyIdentity = (idCardNumber?: string, idCardImageUrl?: string) => {
     if (!user) return;
     persist({
       ...user,
       verified: true,
       idCardNumber: idCardNumber ?? user.idCardNumber,
+      idCardImageUrl: idCardImageUrl ?? user.idCardImageUrl,
     });
   };
   const updateProfile = (patch: Partial<UserProfile>) => {
