@@ -62,7 +62,7 @@ function ProfilePage() {
       type: user.role,
       name: user.name,
       avatar:
-        user.avatar ??
+        user.avatar ||
         `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`,
       verified: !!user.verified,
       bio: user.bio ?? "No bio yet — add one from your account page.",
@@ -115,10 +115,12 @@ function ProfilePage() {
               </span>
             </div>
             <div className="mt-1.5 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Star className="h-3.5 w-3.5 fill-warning text-warning" />
-                {view.rating} · {view.reviewsCount} reviews
-              </span>
+              {isLandlord && (
+                <span className="flex items-center gap-1">
+                  <Star className="h-3.5 w-3.5 fill-warning text-warning" />
+                  {view.rating} · {view.reviewsCount} reviews
+                </span>
+              )}
               <span className="flex items-center gap-1">
                 <CalendarClock className="h-3.5 w-3.5" /> Joined {view.joined}
               </span>
@@ -155,12 +157,14 @@ function ProfilePage() {
               value={view.verified ? "Verified" : "Not verified"}
               ok={view.verified}
             />
-            <Signal
-              icon={Star}
-              label="Rating"
-              value={`${view.rating} / 5`}
-              ok={view.rating >= 4.5}
-            />
+            {isLandlord && (
+              <Signal
+                icon={Star}
+                label="Rating"
+                value={`${view.rating} / 5`}
+                ok={view.rating >= 4.5}
+              />
+            )}
             <Signal
               icon={CalendarClock}
               label="Member since"
@@ -245,7 +249,7 @@ function ProfilePage() {
         </section>
       )}
 
-      {view.reviews.length > 0 && (
+      {isLandlord && view.reviews.length > 0 && (
         <section className="mt-8 rounded-3xl border border-border bg-card p-6 sm:p-8">
           <h2 className="text-lg font-semibold">Reviews</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { toast } from "sonner";
 import {
   Search,
   MapPin,
@@ -89,6 +90,22 @@ function Landing() {
     amenities: [] as string[],
     maxDistance: 99.0,
   });
+  const [submittedQuery, setSubmittedQuery] = useState<typeof q | null>(null);
+
+  const activeQuery = useMemo(() => {
+    return submittedQuery || {
+      location: "",
+      date: "",
+      budget: "any",
+      room: "any",
+      propertyType: "any",
+      pet: false,
+      lease: "" as "" | "1y" | "under1y",
+      amenities: [] as string[],
+      maxDistance: 99.0,
+    };
+  }, [submittedQuery]);
+
   const [showMore, setShowMore] = useState(false);
   const { data: dbListings = [], isLoading } = useQuery({
     queryKey: ["supabase-listings"],
@@ -152,48 +169,60 @@ function Landing() {
   const filtered = useMemo(() => {
     return combinedListings.filter((l) => {
       if (!l.available) return false;
-      if (q.location && !l.location.toLowerCase().includes(q.location.toLowerCase())) return false;
-      if (q.room !== "any" && l.roomType !== q.room) return false;
-      if (q.propertyType !== "any" && l.propertyType !== q.propertyType) return false;
-      if (q.budget !== "any") {
-        const [min, max] = q.budget.split("-").map(Number);
+      if (activeQuery.location && !l.location.toLowerCase().includes(activeQuery.location.toLowerCase())) return false;
+      if (activeQuery.room !== "any" && l.roomType !== activeQuery.room) return false;
+      if (activeQuery.propertyType !== "any" && l.propertyType !== activeQuery.propertyType) return false;
+      if (activeQuery.budget !== "any") {
+        const [min, max] = activeQuery.budget.split("-").map(Number);
         if (l.price < min || (max && l.price > max)) return false;
       }
-      if (q.pet && !l.amenities.includes("Pet Friendly")) return false;
-      if (q.maxDistance !== 99 && l.distance !== undefined && l.distance > q.maxDistance) return false;
+      if (activeQuery.pet && !l.amenities.includes("Pet Friendly")) return false;
+      if (activeQuery.maxDistance !== 99 && l.distance !== undefined && l.distance > activeQuery.maxDistance) return false;
       return true;
     });
-  }, [combinedListings, q]);
+  }, [combinedListings, activeQuery]);
 
-  const matchIds = useMemo(() => bestMatchIds(filtered, q, 3), [filtered, q]);
+  const sortedFiltered = useMemo(() => {
+    return sortByMatchScore(filtered, activeQuery);
+  }, [filtered, activeQuery]);
 
-  const recommendedForYou = useMemo(
-    () =>
-      sortByMatchScore(
-        filtered.filter((l) => l.promoted && l.available),
-        q,
-      ),
-    [filtered, q],
-  );
+  const bestMatches = useMemo(() => {
+    return sortedFiltered.slice(0, 3);
+  }, [sortedFiltered]);
 
-  const browseListings = useMemo(
-    () => filtered.filter((l) => !(l.promoted && l.available)),
-    [filtered],
-  );
+  const bestMatchIdsSet = useMemo(() => {
+    return new Set(bestMatches.map((m) => m.id));
+  }, [bestMatches]);
+
+  const generalListings = useMemo(() => {
+    if (submittedQuery === null) {
+      const promoted = sortedFiltered.filter((l) => l.promoted);
+      const regular = sortedFiltered.filter((l) => !l.promoted);
+      return [...promoted, ...regular];
+    }
+
+    if (filtered.length <= 3) return [];
+    
+    const rest = sortedFiltered.filter((l) => !bestMatchIdsSet.has(l.id));
+    const promotedRest = rest.filter((l) => l.promoted);
+    const regularRest = rest.filter((l) => !l.promoted);
+    
+    return [...promotedRest, ...regularRest];
+  }, [submittedQuery, filtered.length, sortedFiltered, bestMatchIdsSet]);
 
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [q, combinedListings]);
+  }, [submittedQuery, combinedListings]);
 
   const itemsPerPage = 12;
-  const totalPages = Math.ceil(browseListings.length / itemsPerPage);
+  const totalPages = Math.ceil(generalListings.length / itemsPerPage);
 
-  const paginatedBrowseListings = useMemo(() => {
+  const paginatedGeneralListings = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return browseListings.slice(start, start + itemsPerPage);
-  }, [browseListings, currentPage]);
+    return generalListings.slice(start, start + itemsPerPage);
+  }, [generalListings, currentPage]);
 
 
   const testimonials = [
@@ -247,6 +276,17 @@ function Landing() {
                 <input
                   value={q.location}
                   onChange={(e) => setQ({ ...q, location: e.target.value })}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (!q.location.trim()) {
+                        toast.error(t("landing.toastLocationRequired"));
+                        return;
+                      }
+                      setSubmittedQuery({ ...q });
+                      const el = document.getElementById("recommended");
+                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                  }}
                   placeholder={t("landing.searchPlaceholderLocation")}
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 />
@@ -366,6 +406,11 @@ function Landing() {
                 size="lg"
                 className="h-12 w-full gap-2 px-6 text-base font-semibold md:h-full md:w-auto"
                 onClick={() => {
+                  if (!q.location.trim()) {
+                    toast.error(t("landing.toastLocationRequired"));
+                    return;
+                  }
+                  setSubmittedQuery({ ...q });
                   const el = document.getElementById("recommended");
                   if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                 }}
@@ -567,104 +612,106 @@ function Landing() {
           </div>
         ) : (
           <div className="space-y-16">
-            {recommendedForYou.length > 0 && (
-              <div>
-                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            {submittedQuery !== null && bestMatches.length > 0 && (
+              <div className="relative rounded-3xl border border-primary/20 dark:border-primary/30 bg-muted/20 p-6 md:p-8 shadow-glow overflow-hidden">
+                {/* Subtle background decoration */}
+                <div className="absolute -right-16 -top-16 h-36 w-36 rounded-full bg-primary/15 dark:bg-primary/25 blur-2xl pointer-events-none" />
+                <div className="absolute -left-16 -bottom-16 h-36 w-36 rounded-full bg-brand-cyan/15 dark:bg-brand-cyan/25 blur-2xl pointer-events-none" />
+
+                <div className="relative flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
                   <div>
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary">
-                      <Sparkles className="h-3.5 w-3.5" /> {t("landing.personalized")}
+                    <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-medium text-primary backdrop-blur-sm">
+                      <Sparkles className="h-3.5 w-3.5 animate-pulse" /> {t("landing.personalized")}
                     </div>
-                    <h2 className="mt-3 text-2xl font-bold sm:text-3xl">
-                      {t("landing.recommendedTitle")}
+                    <h2 className="mt-3 text-2xl font-bold sm:text-3xl text-foreground">
+                      {t("landing.matchingTitle")}
                     </h2>
-                    <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-                      {t("landing.recommendedDesc")}
+                    <p className="mt-1.5 text-sm text-muted-foreground">
+                      {t("landing.matchingCount", { count: bestMatches.length })}
+                      {t("landing.matchingPromotedNote")}
                     </p>
                   </div>
                 </div>
-                <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                  {recommendedForYou.map((l, i) => (
-                    <PropertyCard key={l.id} listing={l} index={i} bestMatch={matchIds.has(l.id)} />
+                <div className="relative mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {bestMatches.map((l, i) => (
+                    <PropertyCard key={l.id} listing={l} index={i} bestMatch={true} />
                   ))}
                 </div>
               </div>
             )}
 
-            <div>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-bold sm:text-3xl">{t("landing.matchingTitle")}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {t("landing.matchingCount", { count: browseListings.length })}
-                    {recommendedForYou.length > 0 && t("landing.matchingPromotedNote")}
-                  </p>
-                </div>
-              </div>
-              <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {paginatedBrowseListings.length === 0 ? (
-                  <div className="col-span-full rounded-2xl border border-dashed border-border bg-muted/20 p-10 text-center text-sm text-muted-foreground">
-                    {t("landing.allInRecommended")}
+            {generalListings.length > 0 && (
+              <div className="space-y-8">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold sm:text-3xl text-foreground">
+                      {t("landing.generalTitle")}
+                    </h2>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t("landing.generalDesc")} ({t("landing.matchingCount", { count: generalListings.length })})
+                    </p>
                   </div>
-                ) : (
-                  paginatedBrowseListings.map((l, i) => (
-                    <PropertyCard key={l.id} listing={l} index={i} bestMatch={matchIds.has(l.id)} />
-                  ))
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {paginatedGeneralListings.map((l, i) => (
+                    <PropertyCard key={l.id} listing={l} index={i} bestMatch={false} />
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-12 flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setCurrentPage((p) => Math.max(1, p - 1));
+                        document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      disabled={currentPage === 1}
+                      className="h-10 w-10 rounded-xl border border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    
+                    {Array.from({ length: totalPages }).map((_, idx) => {
+                      const pageNum = idx + 1;
+                      const isActive = currentPage === pageNum;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => {
+                            setCurrentPage(pageNum);
+                            document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }}
+                          className={`h-10 min-w-10 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 ${
+                            isActive
+                              ? "bg-primary text-primary-foreground shadow-sm font-bold"
+                              : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        setCurrentPage((p) => Math.min(totalPages, p + 1));
+                        document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      disabled={currentPage === totalPages}
+                      className="h-10 w-10 rounded-xl border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                 )}
               </div>
-
-              {totalPages > 1 && (
-                <div className="mt-12 flex items-center justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setCurrentPage((p) => Math.max(1, p - 1));
-                      document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
-                    disabled={currentPage === 1}
-                    className="h-10 w-10 rounded-xl border border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
-                    aria-label="Previous page"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  
-                  {Array.from({ length: totalPages }).map((_, idx) => {
-                    const pageNum = idx + 1;
-                    const isActive = currentPage === pageNum;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => {
-                          setCurrentPage(pageNum);
-                          document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                        }}
-                        className={`h-10 min-w-10 rounded-xl text-sm font-semibold transition-all hover:scale-105 active:scale-95 ${
-                          isActive
-                            ? "bg-primary text-primary-foreground shadow-sm font-bold"
-                            : "border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => {
-                      setCurrentPage((p) => Math.min(totalPages, p + 1));
-                      document.getElementById("recommended")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }}
-                    disabled={currentPage === totalPages}
-                    className="h-10 w-10 rounded-xl border-border bg-card text-foreground transition-all hover:bg-muted disabled:opacity-50 disabled:pointer-events-none"
-                    aria-label="Next page"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         )}
       </section>

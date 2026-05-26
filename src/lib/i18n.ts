@@ -4,9 +4,8 @@ import en from "@/locales/en.json";
 import th from "@/locales/th.json";
 
 function initialLanguage(): "en" | "th" {
-  if (typeof window === "undefined") return "en";
-  const stored = localStorage.getItem("mt_lang");
-  if (stored === "th" || stored === "TH") return "th";
+  // Always return "en" during SSR and initial hydration to prevent hydration mismatch.
+  // The client-side AppProvider will switch to the user's preferred language after mounting.
   return "en";
 }
 

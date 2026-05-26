@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Heart, Star, MapPin, BedDouble } from "lucide-react";
+import { Heart, Star, MapPin, BedDouble, Sparkles } from "lucide-react";
 import { useApp } from "@/lib/app-context";
 import type { Listing } from "@/lib/mock-data";
 import { useState } from "react";
@@ -26,7 +26,11 @@ export function PropertyCard({
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ delay: index * 0.05, duration: 0.4 }}
-      className={`group overflow-hidden rounded-2xl border border-border bg-card shadow-soft transition-all hover:-translate-y-1 hover:shadow-card ${
+      className={`group overflow-hidden rounded-2xl border transition-all duration-300 hover:-translate-y-1 ${
+        bestMatch
+          ? "border-primary/30 bg-gradient-to-b from-card to-primary/5 shadow-glow hover:shadow-[0_0_0_1px_oklch(0.55_0.22_260_/_0.30),_0_12px_36px_-8px_oklch(0.55_0.22_260_/_0.45)]"
+          : "border-border bg-card shadow-soft hover:shadow-card"
+      } ${
         !listing.available ? "opacity-60 grayscale-[0.2]" : ""
       }`}
     >
@@ -46,8 +50,15 @@ export function PropertyCard({
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{t("propertyCard.noImage")}</div>
           )}
           {bestMatch && listing.available && (
-            <span className="absolute left-3 top-3 rounded-md border border-brand-cyan/35 bg-background/85 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-cyan shadow-sm backdrop-blur-sm">
+            <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-brand-cyan/40 bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-cyan shadow-sm backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-brand-cyan animate-pulse" />
               {t("propertyCard.bestMatch")}
+            </span>
+          )}
+          {!bestMatch && listing.promoted && listing.available && (
+            <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-primary/40 bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              {t("propertyCard.recommended")}
             </span>
           )}
           {!listing.available && (
