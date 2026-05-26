@@ -337,25 +337,7 @@ function ProfileTab({
             : "Upload a government-issued ID to earn a verified badge."}
         </p>
 
-        {u.verified ? (
-          <div className="mt-4 space-y-4 max-w-sm">
-            <Field label="ID Card Number">
-              <Input
-                value={u.idCardNumber ? `${u.idCardNumber.slice(0, 3)}XXXXXXXX${u.idCardNumber.slice(-2)}` : "—"}
-                disabled
-                className="bg-muted"
-              />
-            </Field>
-            {u.idCardImageUrl && (
-              <div className="mt-2">
-                <Label className="text-xs font-medium text-muted-foreground">Uploaded ID Image</Label>
-                <div className="mt-1 aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
-                  <img src={u.idCardImageUrl} alt="Uploaded ID" className="h-full w-full object-cover" />
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
+        {!u.verified && (
           <div className="mt-4 space-y-4 max-w-sm">
             <Field label="ID Card Number (13 digits)">
               <Input
