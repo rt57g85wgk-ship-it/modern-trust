@@ -133,6 +133,8 @@ function ProfileTab({
   const [idCardNumber, setIdCardNumber] = useState(u.idCardNumber ?? "");
   const [idCardFile, setIdCardFile] = useState<File | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     setName(u.name);
@@ -143,6 +145,7 @@ function ProfileTab({
     setTags(u.lifestyleTags ?? []);
     setIdCardNumber(u.idCardNumber ?? "");
     setIdCardFile(null);
+    setAvatarFile(null);
   }, [user]);
   const fileRef = useRef<HTMLInputElement>(null);
   const idRef = useRef<HTMLInputElement>(null);
@@ -202,12 +205,55 @@ function ProfileTab({
 
   const onFile = (files: FileList | null) => {
     if (!files?.[0]) return;
-    setAvatar(URL.createObjectURL(files[0]));
+    const file = files[0];
+    setAvatarFile(file);
+    setAvatar(URL.createObjectURL(file));
   };
 
-  const save = () => {
-    onSave({ name, bio, avatar, preferredArea, moveInTimeline, lifestyleTags: tags });
-    toast.success("Profile updated");
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      let finalAvatar = avatar;
+
+      if (avatarFile) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        if (!userId) {
+          toast.error("Session not found. Please log in again.");
+          return;
+        }
+
+        const fileExt = avatarFile.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        console.log("Uploading profile photo to profile storage path:", filePath);
+        const { error: uploadError } = await supabase.storage
+          .from("profile")
+          .upload(filePath, avatarFile);
+
+        if (uploadError) {
+          console.error("Profile upload error:", uploadError);
+          throw new Error(`Profile photo upload failed: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("profile")
+          .getPublicUrl(filePath);
+
+        finalAvatar = publicUrlData.publicUrl;
+        console.log("Uploaded profile photo public URL:", finalAvatar);
+      }
+
+      await onSave({ name, bio, avatar: finalAvatar, preferredArea, moveInTimeline, lifestyleTags: tags });
+      setAvatarFile(null);
+      toast.success("Profile updated");
+    } catch (err: any) {
+      console.error("Save error:", err);
+      toast.error(err.message || "Failed to update profile.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const toggleTag = (tag: string) =>
@@ -228,11 +274,11 @@ function ProfileTab({
             className="h-24 w-24 rounded-2xl border border-border object-cover"
           />
           <div className="space-y-2">
-            <Button onClick={() => fileRef.current?.click()} className="gap-2">
+            <Button onClick={() => fileRef.current?.click()} className="gap-2" disabled={isSaving}>
               <Upload className="h-4 w-4" /> Upload new photo
             </Button>
             {avatar && (
-              <Button variant="outline" size="sm" onClick={() => setAvatar("")}>
+              <Button variant="outline" size="sm" onClick={() => { setAvatar(""); setAvatarFile(null); }} disabled={isSaving}>
                 Remove
               </Button>
             )}
@@ -397,7 +443,9 @@ function ProfileTab({
       </section>
 
       <div className="flex justify-end gap-2">
-        <Button onClick={save}>Save changes</Button>
+        <Button onClick={save} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save changes"}
+        </Button>
       </div>
     </div>
   );

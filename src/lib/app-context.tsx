@@ -135,7 +135,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 email: dbUser.email || profile.email,
                 role: mapDbRoleToFrontend(dbUser.role || metadata.role),
                 verified: dbUser.is_verified ?? !!metadata.verified,
-                avatar: metadata.avatar || "",
+                avatar: dbUser.profile_image_url || metadata.avatar || "",
                 bio: dbUser.bio || metadata.bio || "",
                 phone: dbUser.phone_number || metadata.phone || "",
                 idCardNumber: dbUser.id_card_number || metadata.idCardNumber || "",
@@ -155,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 phone_number: profile.phone || null,
                 id_card_number: profile.idCardNumber || null,
                 id_card_image_url: profile.idCardImageUrl || null,
+                profile_image_url: profile.avatar || null,
                 is_verified: profile.verified || false,
               };
               console.log("Inserting new row into 'users' table:", newDbUser);
@@ -251,6 +252,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone_number: next.phone || null,
           id_card_number: next.idCardNumber || null,
           id_card_image_url: next.idCardImageUrl || null,
+          profile_image_url: next.avatar || null,
           is_verified: next.verified || false,
           email: next.email,
         };
