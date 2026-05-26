@@ -120,7 +120,7 @@ function ProfileTab({
 }: {
   user: ReturnType<typeof useApp>["user"];
   onSave: ReturnType<typeof useApp>["updateProfile"];
-  onVerify: (idCardNumber: string) => void;
+  onVerify: (idCardNumber?: string) => void;
 }) {
   const u = user!;
   const [name, setName] = useState(u.name);
@@ -129,7 +129,6 @@ function ProfileTab({
   const [preferredArea, setPreferredArea] = useState(u.preferredArea ?? "");
   const [moveInTimeline, setMoveInTimeline] = useState(u.moveInTimeline ?? "");
   const [tags, setTags] = useState<string[]>(u.lifestyleTags ?? []);
-  const [idCardNumber, setIdCardNumber] = useState(u.idCardNumber ?? "");
 
   useEffect(() => {
     setName(u.name);
@@ -138,7 +137,6 @@ function ProfileTab({
     setPreferredArea(u.preferredArea ?? "");
     setMoveInTimeline(u.moveInTimeline ?? "");
     setTags(u.lifestyleTags ?? []);
-    setIdCardNumber(u.idCardNumber ?? "");
   }, [user]);
   const fileRef = useRef<HTMLInputElement>(null);
   const idRef = useRef<HTMLInputElement>(null);
@@ -280,62 +278,29 @@ function ProfileTab({
             : "Upload a government-issued ID to earn a verified badge."}
         </p>
 
-        {u.verified ? (
-          <div className="mt-4 max-w-sm">
-            <Field label="ID Card Number">
-              <Input
-                value={idCardNumber ? `${idCardNumber.slice(0, 3)}XXXXXXXX${idCardNumber.slice(-2)}` : "—"}
-                disabled
-                className="bg-muted"
-              />
-            </Field>
-          </div>
-        ) : (
-          <div className="mt-4 space-y-4 max-w-sm">
-            <Field label="ID Card Number (13 digits)">
-              <Input
-                value={idCardNumber}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 13);
-                  setIdCardNumber(val);
-                }}
-                placeholder="e.g. 1100100123456"
-                maxLength={13}
-              />
-            </Field>
-            
-            <div>
-              <Button
-                className="gap-2"
-                variant="outline"
-                onClick={() => {
-                  if (idCardNumber.length !== 13) {
-                    toast.error("Please enter your 13-digit ID card number first.");
-                    return;
-                  }
-                  idRef.current?.click();
-                }}
-              >
-                <Upload className="h-4 w-4" /> Upload ID
-              </Button>
-              <input
-                ref={idRef}
-                type="file"
-                accept="image/*,application/pdf"
-                className="hidden"
-                onChange={(e) => {
-                  if (!e.target.files?.[0]) return;
-                  if (idCardNumber.length !== 13) {
-                    toast.error("Please enter your 13-digit ID card number first.");
-                    e.target.value = "";
-                    return;
-                  }
-                  onVerify(idCardNumber);
-                  toast.success("ID received — your account is verified.");
-                  e.target.value = "";
-                }}
-              />
-            </div>
+        {!u.verified && (
+          <div className="mt-4">
+            <Button
+              className="gap-2"
+              variant="outline"
+              onClick={() => {
+                idRef.current?.click();
+              }}
+            >
+              <Upload className="h-4 w-4" /> Upload ID
+            </Button>
+            <input
+              ref={idRef}
+              type="file"
+              accept="image/*,application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                if (!e.target.files?.[0]) return;
+                onVerify();
+                toast.success("ID received — your account is verified.");
+                e.target.value = "";
+              }}
+            />
           </div>
         )}
       </section>
