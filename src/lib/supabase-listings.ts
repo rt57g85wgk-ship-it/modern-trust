@@ -30,6 +30,8 @@ export type Unit = {
   water_rate_type?: "GOVERNMENT" | "FIXED";
   water_rate?: number | string;
   imageFiles?: File[];
+  room_number?: string;
+  floor_level?: string | number;
 };
 
 const defaultThumb =
@@ -236,7 +238,9 @@ export function mapDbRoomToUnit(room: any, building: any): Unit {
     electric_rate_type: room.electric_rate_type || "GOVERNMENT",
     electric_rate: room.electric_rate || 0,
     water_rate_type: room.water_rate_type || "GOVERNMENT",
-    water_rate: room.water_rate || 0
+    water_rate: room.water_rate || 0,
+    room_number: room.room_number || "",
+    floor_level: room.floor_level || ""
   };
 }
 

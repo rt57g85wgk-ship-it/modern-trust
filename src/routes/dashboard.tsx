@@ -374,6 +374,8 @@ type Unit = {
   water_rate_type?: "GOVERNMENT" | "FIXED";
   water_rate?: number | string;
   imageFiles?: File[];
+  room_number?: string;
+  floor_level?: string | number;
 };
 
 const defaultThumb =
@@ -532,6 +534,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
             description: u.description,
             amenities_in_room: u.amenities,
             images: finalImages.length > 0 ? finalImages : u.images,
+            room_number: u.room_number || null,
+            floor_level: u.floor_level !== "" && u.floor_level !== undefined && u.floor_level !== null ? Number(u.floor_level) : null,
           })
           .eq("room_id", u.id);
 
@@ -591,8 +595,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
           .from("rooms")
           .insert({
             building_id: buildingData.building_id,
-            room_number: `RM-${Math.floor(Math.random() * 1000)}`,
-            listing_title: u.title, // เพิ่มตัวแปร listing_title ตาม SQL
+            room_number: u.room_number || `RM-${Math.floor(Math.random() * 1000)}`,
+            listing_title: u.title,
             room_type: u.roomType === "Studio" ? "STUDIO" : u.roomType === "1 Bedroom" ? "1_BEDROOM" : "2_BEDROOM",
             room_size_sqm: u.sizeValue,
             status: u.available ? "AVAILABLE" : "OCCUPIED",
@@ -607,7 +611,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
             no_smoking: true,
             description: u.description,
             amenities_in_room: u.amenities,
-            images: finalImages, // ส่ง URL ที่อัปโหลดเสร็จแล้วเข้าฐานข้อมูล (อย่าลืมสร้างคอลัมน์นี้ใน SQL นะครับ)
+            images: finalImages,
+            floor_level: u.floor_level !== "" && u.floor_level !== undefined && u.floor_level !== null ? Number(u.floor_level) : null,
           });
 
         if (roomError) throw roomError;
@@ -784,11 +789,29 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                 />
                 <Select
                   value={u.available ? "available" : "unavailable"}
-                  onValueChange={(v) =>
+                  onValueChange={async (v) => {
+                    const isAvailable = v === "available";
+                    const statusText = isAvailable ? "AVAILABLE" : "OCCUPIED";
+                    
                     setUnits((arr) =>
-                      arr.map((x) => (x.id === u.id ? { ...x, available: v === "available" } : x)),
-                    )
-                  }
+                      arr.map((x) => (x.id === u.id ? { ...x, available: isAvailable } : x)),
+                    );
+
+                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
+                    if (isUuid) {
+                      try {
+                        const { error } = await supabase
+                          .from("rooms")
+                          .update({ status: statusText })
+                          .eq("room_id", u.id);
+                        if (error) throw error;
+                        toast.success(t("dashboard.toastUpdated"));
+                      } catch (err: any) {
+                        console.error("Failed to update status in DB:", err);
+                        toast.error("Failed to update status in database.");
+                      }
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-9 w-[150px] gap-1.5 text-xs font-medium">
                     <span
@@ -1020,8 +1043,8 @@ function ListingFormDialog({
       const nextImages = currentImages.filter((_, i) => i !== idx);
       const nextFiles = prev.imageFiles ? prev.imageFiles.filter((_, i) => i !== idx) : [];
       
-      const finalImages = nextImages.length ? nextImages : [defaultThumb];
-      return { ...prev, images: finalImages, imageFiles: nextFiles, image: finalImages[0] };
+      const finalImages = nextImages;
+      return { ...prev, images: finalImages, imageFiles: nextFiles, image: finalImages[0] || "" };
     });
   };
 
@@ -1171,8 +1194,12 @@ function ListingFormDialog({
               type="number"
               min={0}
               className="h-10"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+              placeholder="เช่น 12000"
+              value={form.price === 0 ? "" : form.price}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setForm({ ...form, price: Number.isNaN(val) ? 0 : Math.max(0, val) });
+              }}
             />
           </Field>
 
@@ -1211,6 +1238,27 @@ function ListingFormDialog({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="เลขที่ห้อง (Room Number)">
+              <Input
+                value={form.room_number ?? ""}
+                onChange={(e) => setForm({ ...form, room_number: e.target.value })}
+                placeholder="เช่น 101/45"
+                className="h-10"
+              />
+            </Field>
+            <Field label="ชั้นที่ (Floor Level)">
+              <Input
+                type="number"
+                min={0}
+                value={form.floor_level ?? ""}
+                onChange={(e) => setForm({ ...form, floor_level: e.target.value === "" ? "" : Number(e.target.value) })}
+                placeholder="เช่น 5"
+                className="h-10"
+              />
+            </Field>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -1490,11 +1538,11 @@ function blankUnit(): Unit {
     roomType: "1 Bedroom",
     bedrooms: 1,
     bathrooms: 0,
-    sizeValue: 32,
+    sizeValue: 0,
     sizeUnit: "sqm",
-    price: 15000,
-    image: defaultThumb,
-    images: [defaultThumb],
+    price: 0,
+    image: "",
+    images: [],
     description: "",
     amenities: [],
     petFriendly: false,
@@ -1507,6 +1555,8 @@ function blankUnit(): Unit {
     electric_rate: undefined,
     water_rate_type: "GOVERNMENT",
     water_rate: undefined,
+    room_number: "",
+    floor_level: "",
   };
 }
 
