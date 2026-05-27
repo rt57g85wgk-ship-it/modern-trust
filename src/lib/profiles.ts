@@ -163,7 +163,10 @@ export async function fetchSupabaseProfileById(userId: string): Promise<PublicPr
                 name,
                 is_verified,
                 email,
-                phone_number
+                phone_number,
+                line_id,
+                line_url,
+                line_qr_url
               )
             )
           `)

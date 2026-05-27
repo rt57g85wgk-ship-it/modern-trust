@@ -10,10 +10,12 @@ export function PropertyCard({
   listing,
   index = 0,
   bestMatch = false,
+  matchScore,
 }: {
   listing: Listing;
   index?: number;
   bestMatch?: boolean;
+  matchScore?: number;
 }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -51,7 +53,13 @@ export function PropertyCard({
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{t("propertyCard.noImage")}</div>
           )}
 
-          {!bestMatch && listing.promoted && listing.available && (
+          {matchScore !== undefined && (
+            <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-primary/30 bg-primary px-2.5 py-1 text-[10px] font-bold text-primary-foreground shadow-sm backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-primary-foreground animate-pulse" />
+              {matchScore}% {t("propertyCard.match")}
+            </span>
+          )}
+          {matchScore === undefined && !bestMatch && listing.promoted && listing.available && (
             <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-primary/40 bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
               {t("propertyCard.recommended")}

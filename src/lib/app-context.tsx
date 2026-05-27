@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
 import i18n from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
@@ -23,6 +23,9 @@ export type UserProfile = {
   phone?: string;
   idCardNumber?: string;
   idCardImageUrl?: string;
+  lineId?: string;
+  lineUrl?: string;
+  lineQrUrl?: string;
   // Renter extras
   preferredArea?: string;
   moveInTimeline?: string;
@@ -83,13 +86,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [favorites, setFavorites] = useState<string[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [authLoading, setAuthLoading] = useState(true);
+  const loadedUserRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const f = localStorage.getItem("mt_fav");
     const t = (localStorage.getItem("mt_theme") as "light" | "dark") || "light";
     const lang = localStorage.getItem("mt_lang");
-    if (f) setFavorites(JSON.parse(f));
     setTheme(t);
     document.documentElement.classList.toggle("dark", t === "dark");
     if (lang === "th" || lang === "TH") void i18n.changeLanguage("th");
@@ -114,6 +116,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone: metadata.phone || "",
           idCardNumber: metadata.idCardNumber || "",
           idCardImageUrl: metadata.idCardImageUrl || "",
+          lineId: metadata.lineId || "",
+          lineUrl: metadata.lineUrl || "",
+          lineQrUrl: metadata.lineQrUrl || "",
           preferredArea: metadata.preferredArea || "",
           moveInTimeline: metadata.moveInTimeline || "",
           lifestyleTags: metadata.lifestyleTags || [],
@@ -143,6 +148,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 phone: dbUser.phone_number || metadata.phone || "",
                 idCardNumber: dbUser.id_card_number || metadata.idCardNumber || "",
                 idCardImageUrl: dbUser.id_card_image_url || metadata.idCardImageUrl || "",
+                lineId: dbUser.line_id || metadata.lineId || "",
+                lineUrl: dbUser.line_url || metadata.lineUrl || "",
+                lineQrUrl: dbUser.line_qr_url || metadata.lineQrUrl || "",
                 preferredArea: metadata.preferredArea || "",
                 moveInTimeline: metadata.moveInTimeline || "",
                 lifestyleTags: metadata.lifestyleTags || [],
@@ -160,6 +168,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 id_card_image_url: profile.idCardImageUrl || null,
                 profile_image_url: profile.avatar || null,
                 is_verified: profile.verified || false,
+                line_id: profile.lineId || null,
+                line_url: profile.lineUrl || null,
+                line_qr_url: profile.lineQrUrl || null,
               };
               console.log("Inserting new row into 'users' table:", newDbUser);
               const { error: insErr } = await supabase.from("users").insert(newDbUser);
@@ -188,6 +199,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
               phone: metadata.phone || localUser.phone,
               idCardNumber: metadata.idCardNumber || localUser.idCardNumber,
               idCardImageUrl: metadata.idCardImageUrl || localUser.idCardImageUrl,
+              lineId: metadata.lineId || localUser.lineId,
+              lineUrl: metadata.lineUrl || localUser.lineUrl,
+              lineQrUrl: metadata.lineQrUrl || localUser.lineQrUrl,
             };
           }
         }
@@ -213,8 +227,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    localStorage.setItem("mt_fav", JSON.stringify(favorites));
-  }, [favorites]);
+    const userEmail = user?.email;
+    const key = userEmail ? `mt_fav_${userEmail}` : "mt_fav_anon";
+    let f = localStorage.getItem(key);
+    if (!f && !userEmail) {
+      f = localStorage.getItem("mt_fav");
+    }
+    let loadedFavs: string[] = [];
+    if (f) {
+      try {
+        loadedFavs = JSON.parse(f);
+      } catch (e) {
+        console.error("Error parsing favorites", e);
+      }
+    }
+    setFavorites(loadedFavs);
+    loadedUserRef.current = userEmail;
+  }, [user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const userEmail = user?.email;
+    if (loadedUserRef.current !== userEmail) {
+      return;
+    }
+    const key = userEmail ? `mt_fav_${userEmail}` : "mt_fav_anon";
+    localStorage.setItem(key, JSON.stringify(favorites));
+  }, [favorites, user]);
 
   const persist = async (next: NonNullable<User>) => {
     setUser(next);
@@ -236,6 +275,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone: next.phone,
           idCardNumber: next.idCardNumber,
           idCardImageUrl: next.idCardImageUrl,
+          lineId: next.lineId,
+          lineUrl: next.lineUrl,
+          lineQrUrl: next.lineQrUrl,
           preferredArea: next.preferredArea,
           moveInTimeline: next.moveInTimeline,
           lifestyleTags: next.lifestyleTags,
@@ -259,6 +301,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           profile_image_url: next.avatar || null,
           is_verified: next.verified || false,
           email: next.email,
+          line_id: next.lineId || null,
+          line_url: next.lineUrl || null,
+          line_qr_url: next.lineQrUrl || null,
         };
         console.log("Updating DB users table row with patch:", dbPatch);
         const { error: dbError } = await supabase
@@ -306,6 +351,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone: dbUser.phone_number || freshUser.phone || "",
           idCardNumber: dbUser.id_card_number || freshUser.idCardNumber || "",
           idCardImageUrl: dbUser.id_card_image_url || freshUser.idCardImageUrl || "",
+          lineId: dbUser.line_id || freshUser.lineId || "",
+          lineUrl: dbUser.line_url || freshUser.lineUrl || "",
+          lineQrUrl: dbUser.line_qr_url || freshUser.lineQrUrl || "",
         };
       }
     } catch (e) {
@@ -322,7 +370,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setFavorites([]);
     if (typeof window !== "undefined") {
       localStorage.removeItem("mt_user");
-      localStorage.removeItem("mt_fav");
       sessionStorage.clear();
     }
     try {
@@ -392,6 +439,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             phone: dbUser.phone_number || metadata.phone || "",
             idCardNumber: dbUser.id_card_number || metadata.idCardNumber || "",
             idCardImageUrl: dbUser.id_card_image_url || metadata.idCardImageUrl || "",
+            lineId: dbUser.line_id || metadata.lineId || "",
+            lineUrl: dbUser.line_url || metadata.lineUrl || "",
+            lineQrUrl: dbUser.line_qr_url || metadata.lineQrUrl || "",
             preferredArea: metadata.preferredArea || "",
             moveInTimeline: metadata.moveInTimeline || "",
             lifestyleTags: metadata.lifestyleTags || [],

@@ -29,6 +29,7 @@ import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSupabaseListings } from "@/lib/supabase-listings";
 import { useApp } from "@/lib/app-context";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -147,6 +148,72 @@ function Landing() {
     return bins;
   }, []);
 
+  const handleSearch = async () => {
+    if (!user) {
+      void navigate({ to: "/login" });
+      return;
+    }
+    if (!q.location.trim()) {
+      toast.error(t("landing.toastLocationRequired"));
+      return;
+    }
+    setSubmittedQuery({ ...q });
+
+    // Save to local storage
+    const storageKey = user ? `mt_search_prefs_${user.email}` : "mt_search_prefs_anon";
+    localStorage.setItem(storageKey, JSON.stringify(q));
+
+    // Save to Supabase
+    try {
+      const { data: { user: sbUser } } = await supabase.auth.getUser();
+      if (sbUser) {
+        let minB: number | null = null;
+        let maxB: number | null = null;
+        if (q.budget !== "any") {
+          const [min, max] = q.budget.split("-").map(Number);
+          minB = min ?? null;
+          maxB = max ?? null;
+        }
+
+        const requirements = {
+          user_id: sbUser.id,
+          min_budget: minB,
+          max_budget: maxB,
+          location_name: q.location,
+          location_lat: 13.7563, // Default lat
+          location_lng: 100.5018, // Default lng
+          radius_km: q.maxDistance,
+          property_type: q.propertyType,
+          room_layout: q.room,
+          pet_friendly: q.pet,
+          lease_term: q.lease || null,
+          preferred_amenities: q.amenities,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { error } = await supabase
+          .from("tenant_requirements")
+          .upsert(requirements, { onConflict: "user_id" });
+
+        if (error) {
+          console.error("Error saving requirements:", error);
+          toast.error(t("landing.toastSavePreferencesError"));
+        } else {
+          toast.success(t("landing.toastSavePreferencesSuccess"));
+        }
+      } else {
+        // Fallback success feedback for mock/simulated login flows
+        toast.success(t("landing.toastSavePreferencesSuccess"));
+      }
+    } catch (err) {
+      console.error("Error upserting match preferences:", err);
+      toast.error(t("landing.toastSavePreferencesError"));
+    }
+
+    const el = document.getElementById("recommended");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const handleSliderChange = (val: number[]) => {
     if (val.length === 2) {
       setLocalRange([val[0], val[1]]);
@@ -246,6 +313,106 @@ function Landing() {
     setCurrentPage(1);
   }, [submittedQuery, combinedListings]);
 
+  useEffect(() => {
+    async function loadTenantRequirements() {
+      const storageKey = user ? `mt_search_prefs_${user.email}` : "mt_search_prefs_anon";
+      const savedLocal = localStorage.getItem(storageKey);
+      let localPrefs: typeof q | null = null;
+      if (savedLocal) {
+        try {
+          localPrefs = JSON.parse(savedLocal);
+          if (localPrefs) {
+            setQ(localPrefs);
+            setSubmittedQuery(localPrefs);
+            if (localPrefs.budget !== "any") {
+              const [min, max] = localPrefs.budget.split("-").map(Number);
+              setLocalRange([min ?? 0, max ?? 50000]);
+            } else {
+              setLocalRange([0, 50000]);
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing local preferences", e);
+        }
+      }
+
+      if (!user) return;
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        if (!sbUser) return;
+
+        const { data, error } = await supabase
+          .from("tenant_requirements")
+          .select("*")
+          .eq("user_id", sbUser.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Error loading tenant requirements:", error);
+          return;
+        }
+
+        if (data) {
+          let budgetStr = "any";
+          if (data.min_budget !== null && data.max_budget !== null) {
+            budgetStr = `${data.min_budget}-${data.max_budget}`;
+            setLocalRange([Number(data.min_budget), Number(data.max_budget)]);
+          } else {
+            setLocalRange([0, 50000]);
+          }
+
+          const loadedQ = {
+            location: data.location_name || "",
+            date: "",
+            budget: budgetStr,
+            room: data.room_layout || "any",
+            propertyType: data.property_type || "any",
+            pet: data.pet_friendly ?? false,
+            lease: (data.lease_term || "") as "" | "1y" | "under1y",
+            amenities: data.preferred_amenities || [],
+            maxDistance: data.radius_km ?? 99.0,
+          };
+
+          setQ(loadedQ);
+          setSubmittedQuery(loadedQ);
+          localStorage.setItem(storageKey, JSON.stringify(loadedQ));
+        } else if (localPrefs) {
+          // Sync local preferences to database if DB record is missing
+          let minB: number | null = null;
+          let maxB: number | null = null;
+          if (localPrefs.budget !== "any") {
+            const [min, max] = localPrefs.budget.split("-").map(Number);
+            minB = min ?? null;
+            maxB = max ?? null;
+          }
+
+          const requirements = {
+            user_id: sbUser.id,
+            min_budget: minB,
+            max_budget: maxB,
+            location_name: localPrefs.location,
+            location_lat: 13.7563,
+            location_lng: 100.5018,
+            radius_km: localPrefs.maxDistance,
+            property_type: localPrefs.propertyType,
+            room_layout: localPrefs.room,
+            pet_friendly: localPrefs.pet,
+            lease_term: localPrefs.lease || null,
+            preferred_amenities: localPrefs.amenities,
+            updated_at: new Date().toISOString(),
+          };
+
+          await supabase
+            .from("tenant_requirements")
+            .upsert(requirements, { onConflict: "user_id" });
+        }
+      } catch (err) {
+        console.error("Failed to fetch tenant requirements:", err);
+      }
+    }
+    loadTenantRequirements();
+  }, [user]);
+
   const itemsPerPage = 12;
   const totalPages = Math.ceil(generalListings.length / itemsPerPage);
 
@@ -308,17 +475,7 @@ function Landing() {
                   onChange={(e) => setQ({ ...q, location: e.target.value })}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      if (!user) {
-                        void navigate({ to: "/login" });
-                        return;
-                      }
-                      if (!q.location.trim()) {
-                        toast.error(t("landing.toastLocationRequired"));
-                        return;
-                      }
-                      setSubmittedQuery({ ...q });
-                      const el = document.getElementById("recommended");
-                      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                      void handleSearch();
                     }
                   }}
                   placeholder={t("landing.searchPlaceholderLocation")}
@@ -440,17 +597,7 @@ function Landing() {
                 size="lg"
                 className="h-12 w-full gap-2 px-6 text-base font-semibold md:h-full md:w-auto"
                 onClick={() => {
-                  if (!user) {
-                    void navigate({ to: "/login" });
-                    return;
-                  }
-                  if (!q.location.trim()) {
-                    toast.error(t("landing.toastLocationRequired"));
-                    return;
-                  }
-                  setSubmittedQuery({ ...q });
-                  const el = document.getElementById("recommended");
-                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                  void handleSearch();
                 }}
               >
                 <Search className="h-5 w-5" /> {t("landing.findRoom")}

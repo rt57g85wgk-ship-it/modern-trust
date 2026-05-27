@@ -60,8 +60,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { AnimatePresence } from "framer-motion";
 import { supabase } from "@/lib/supabase";
-import { mapDbRoomToUnit, fetchSupabaseListings } from "@/lib/supabase-listings";
+import { mapDbRoomToUnit, fetchSupabaseListings, mapDbRoomToListing } from "@/lib/supabase-listings";
 import { useQuery } from "@tanstack/react-query";
+import { PropertyCard } from "@/components/PropertyCard";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -199,6 +200,48 @@ function StatCard({
   );
 }
 
+function calculateRenterTrustScore(u: any): number {
+  if (!u) return 0;
+  let score = 0;
+
+  // 1. Identity Verification (50%)
+  if (u.verified) {
+    score += 50;
+  }
+
+  // 2. Profile Photo (10%)
+  if (u.avatar && u.avatar.trim().length > 0 && !u.avatar.includes("dicebear.com")) {
+    score += 10;
+  }
+
+  // 3. Phone Number (15%)
+  if (u.phone && u.phone.trim().length > 0) {
+    score += 15;
+  }
+
+  // 4. Bio / Description (10%)
+  if (u.bio && u.bio.trim().length > 0) {
+    score += 10;
+  }
+
+  // 5. Preferred Area (5%)
+  if (u.preferredArea && u.preferredArea.trim().length > 0) {
+    score += 5;
+  }
+
+  // 6. Move-in Timeline (5%)
+  if (u.moveInTimeline && u.moveInTimeline.trim().length > 0) {
+    score += 5;
+  }
+
+  // 7. Lifestyle Tags (5%)
+  if (u.lifestyleTags && u.lifestyleTags.length > 0) {
+    score += 5;
+  }
+
+  return score;
+}
+
 function RenterView({
   favorites,
   verified,
@@ -209,11 +252,30 @@ function RenterView({
   onVerify: () => void;
 }) {
   const { t } = useTranslation();
+  const { user } = useApp();
   const { data: dbListings = [] } = useQuery({
     queryKey: ["supabase-listings"],
     queryFn: fetchSupabaseListings,
   });
   const saved = dbListings.filter((l) => favorites.includes(l.id));
+
+  const [recentlyViewedCount, setRecentlyViewedCount] = useState(0);
+
+  useEffect(() => {
+    try {
+      const recentStr = localStorage.getItem("mt_recently_viewed");
+      if (recentStr) {
+        const recentList = JSON.parse(recentStr);
+        if (Array.isArray(recentList)) {
+          setRecentlyViewedCount(recentList.length);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to read recently viewed count:", e);
+    }
+  }, []);
+
+  const trustScore = user ? calculateRenterTrustScore(user) : 0;
 
   return (
     <div className="mt-8 space-y-8">
@@ -224,11 +286,11 @@ function RenterView({
           value={String(saved.length)}
           color="primary"
         />
-        <StatCard icon={Eye} label={t("dashboard.recentlyViewed")} value="14" color="cyan" />
+        <StatCard icon={Eye} label={t("dashboard.recentlyViewed")} value={String(recentlyViewedCount)} color="cyan" />
         <StatCard
           icon={ShieldCheck}
           label={t("dashboard.trustScore")}
-          value={verified ? "98%" : "—"}
+          value={`${trustScore}%`}
           color="primary"
         />
         <StatCard
@@ -276,9 +338,7 @@ function RenterView({
             </Link>
           </div>
         </section>
-      </div>
-
-      <section>
+      </div>      <section>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">{t("dashboard.savedSectionTitle")}</h2>
           <Link to="/" className="text-sm font-medium text-primary hover:underline">

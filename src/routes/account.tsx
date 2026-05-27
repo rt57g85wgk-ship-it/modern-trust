@@ -469,20 +469,84 @@ function SettingsTab({
   const u = user!;
   const { toggleLang } = useApp();
   const [phone, setPhone] = useState(u.phone ?? "");
+  const [lineId, setLineId] = useState(u.lineId ?? "");
+  const [lineQrUrl, setLineQrUrl] = useState(u.lineQrUrl ?? "");
+  const [lineQrFile, setLineQrFile] = useState<File | null>(null);
   const [notifyEmail, setNotifyEmail] = useState(u.notifyEmail ?? true);
   const [notifyPush, setNotifyPush] = useState(u.notifyPush ?? true);
   const [notifySms, setNotifySms] = useState(u.notifySms ?? false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setPhone(u.phone ?? "");
+    setLineId(u.lineId ?? "");
+    setLineQrUrl(u.lineQrUrl ?? "");
+    setLineQrFile(null);
     setNotifyEmail(u.notifyEmail ?? true);
     setNotifyPush(u.notifyPush ?? true);
     setNotifySms(u.notifySms ?? false);
   }, [user]);
 
-  const save = () => {
-    onSave({ phone, notifyEmail, notifyPush, notifySms });
-    toast.success("Settings saved");
+  const save = async () => {
+    setIsSaving(true);
+    try {
+      let finalQrUrl = lineQrUrl;
+
+      if (lineQrFile) {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+        if (!userId) {
+          toast.error("Session not found. Please log in again.");
+          return;
+        }
+
+        const fileExt = lineQrFile.name.split(".").pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `${userId}/${fileName}`;
+
+        console.log("Uploading QR code to bucket 'qr-codes' path:", filePath);
+        const { error: uploadError } = await supabase.storage
+          .from("qr-codes")
+          .upload(filePath, lineQrFile);
+
+        if (uploadError) {
+          console.error("QR Code upload error:", uploadError);
+          throw new Error(`QR Code upload failed: ${uploadError.message}`);
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("qr-codes")
+          .getPublicUrl(filePath);
+
+        finalQrUrl = publicUrlData.publicUrl;
+        setLineQrUrl(finalQrUrl);
+        console.log("Uploaded QR Code public URL:", finalQrUrl);
+      }
+
+      const cleanLineId = lineId.trim();
+      const derivedLineUrl = cleanLineId
+        ? `https://line.me/R/ti/p/~${cleanLineId.replace("@", "")}`
+        : "";
+
+      await onSave({
+        phone,
+        lineId: cleanLineId,
+        lineUrl: derivedLineUrl,
+        lineQrUrl: finalQrUrl,
+        notifyEmail,
+        notifyPush,
+        notifySms,
+      });
+      setLineQrFile(null);
+      toast.success("Settings saved");
+    } catch (err: any) {
+      console.error("Save settings error:", err);
+      toast.error(err.message || "Failed to save settings.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -498,14 +562,88 @@ function SettingsTab({
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+66 ..."
                 className="pl-9"
+                disabled={isSaving}
               />
             </div>
           </Field>
+          {u.role === "landlord" && (
+            <Field label="Line ID">
+              <Input
+                value={lineId}
+                onChange={(e) => setLineId(e.target.value)}
+                placeholder="e.g. @username"
+                disabled={isSaving}
+              />
+            </Field>
+          )}
           <Field label="Language">
-            <Button variant="outline" className="w-full justify-start gap-2" onClick={toggleLang}>
+            <Button variant="outline" className="w-full justify-start gap-2" onClick={toggleLang} disabled={isSaving}>
               <Globe className="h-4 w-4" /> Switch language
             </Button>
           </Field>
+
+          {u.role === "landlord" && (
+            <div className="sm:col-span-2 space-y-2 pt-2 border-t border-border/50">
+              <Label className="text-xs font-medium text-muted-foreground">Line QR Code Image</Label>
+              <div className="flex flex-wrap items-center gap-4">
+                {(lineQrUrl || lineQrFile) ? (
+                  <img
+                    src={lineQrFile ? URL.createObjectURL(lineQrFile) : lineQrUrl}
+                    alt="Line QR Code Preview"
+                    className="h-24 w-24 rounded-lg border border-border object-cover bg-white"
+                  />
+                ) : (
+                  <div className="h-24 w-24 rounded-lg border border-dashed border-border bg-muted/20 flex flex-col items-center justify-center text-[10px] text-muted-foreground p-2 text-center">
+                    No QR Code uploaded
+                  </div>
+                )}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => qrInputRef.current?.click()}
+                      disabled={isSaving}
+                      className="gap-2"
+                      size="sm"
+                    >
+                      <Upload className="h-4 w-4" /> Select QR Code Image
+                    </Button>
+                    {(lineQrUrl || lineQrFile) && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setLineQrUrl("");
+                          setLineQrFile(null);
+                        }}
+                        disabled={isSaving}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {lineQrFile ? lineQrFile.name : "Select PNG or JPG image of your Line QR Code"}
+                  </p>
+                </div>
+                <input
+                  ref={qrInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={isSaving}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setLineQrFile(file);
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
@@ -583,7 +721,9 @@ function SettingsTab({
       </section>
 
       <div className="flex justify-end gap-2">
-        <Button onClick={save}>Save changes</Button>
+        <Button onClick={save} disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save changes"}
+        </Button>
       </div>
     </div>
   );

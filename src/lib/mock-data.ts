@@ -28,7 +28,7 @@ export type Listing = {
   water_rate_type?: "GOVERNMENT" | "FIXED";
   water_rate?: number | string;
   description: string;
-  landlord: { id?: string; name: string; verified: boolean; avatar: string; lineUrl?: string; phone?: string; lineId?: string };
+  landlord: { id?: string; name: string; verified: boolean; avatar: string; lineUrl?: string; phone?: string; lineId?: string; lineQrUrl?: string };
 };
 
 const img = (id: number, w = 800, h = 600) =>

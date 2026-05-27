@@ -3,11 +3,12 @@ import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Mail, Lock, User as UserIcon, Loader2 } from "lucide-react";
+import { Mail, Lock, User as UserIcon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useApp } from "@/lib/app-context";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 type Role = "renter" | "landlord";
 type Mode = "signin" | "signup";
@@ -22,6 +23,7 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   const [pending, setPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const schema = z.object({
     name: mode === "signup"
@@ -46,6 +48,7 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
       return;
     }
     setErrors({});
+    setSubmitError(null);
     setPending(true);
 
     try {
@@ -55,6 +58,7 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
         console.log("Supabase signUp response:", { data, error });
         if (error) {
           toast.error(error.message);
+          setSubmitError(error.message);
           setPending(false);
           return;
         }
@@ -71,6 +75,7 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
         console.log("Supabase signIn response:", { data, error });
         if (error) {
           toast.error(error.message);
+          setSubmitError(error.message);
           setPending(false);
           return;
         }
@@ -80,14 +85,31 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
       }
     } catch (err: any) {
       console.error("Auth submission crashed:", err);
-      toast.error(err.message || "An unexpected error occurred.");
+      const msg = err.message || "An unexpected error occurred.";
+      toast.error(msg);
+      setSubmitError(msg);
     } finally {
       setPending(false);
     }
   };
 
+  const getErrorMessage = (msg: string | null) => {
+    if (!msg) return "";
+    if (msg === "Invalid login credentials" || msg.toLowerCase().includes("invalid credentials")) {
+      return t("auth.errors.invalidCredentials");
+    }
+    return msg;
+  };
+
   return (
     <form onSubmit={onSubmit} className="mt-6 space-y-4" noValidate>
+      {submitError && (
+        <Alert variant="destructive" className="animate-in fade-in slide-in-from-top-1 duration-200">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>{t("auth.errorTitle")}</AlertTitle>
+          <AlertDescription>{getErrorMessage(submitError)}</AlertDescription>
+        </Alert>
+      )}
       {mode === "signup" && (
         <div className="space-y-1.5">
           <Label htmlFor="ep-name">{t("auth.fullName")}</Label>

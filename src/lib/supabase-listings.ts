@@ -179,8 +179,9 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
       const landlordVerified = landlordUser?.is_verified ?? true;
       const landlordAvatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(landlordName)}`;
       const landlordPhone = landlordUser?.phone_number || "081-234-5678";
-      const landlordLineId = "@moderntrust";
-      const landlordLineUrl = "https://line.me/R/ti/p/@moderntrust";
+      const landlordLineId = landlordUser?.line_id || "@moderntrust";
+      const landlordLineUrl = landlordUser?.line_url || "https://line.me/R/ti/p/@moderntrust";
+      const landlordLineQrUrl = landlordUser?.line_qr_url || "";
       return {
         id: building?.owner_id || undefined,
         name: landlordName,
@@ -189,6 +190,7 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
         phone: landlordPhone,
         lineId: landlordLineId,
         lineUrl: landlordLineUrl,
+        lineQrUrl: landlordLineQrUrl,
       };
     })()
   };
@@ -263,7 +265,10 @@ export async function fetchSupabaseListings(): Promise<Listing[]> {
             name,
             is_verified,
             email,
-            phone_number
+            phone_number,
+            line_id,
+            line_url,
+            line_qr_url
           )
         )
       `);
@@ -309,7 +314,10 @@ export async function fetchSupabaseListingById(id: string): Promise<Listing | nu
             name,
             is_verified,
             email,
-            phone_number
+            phone_number,
+            line_id,
+            line_url,
+            line_qr_url
           )
         )
       `)

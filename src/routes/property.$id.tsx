@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -65,12 +65,32 @@ function PropertyPage() {
   const [date, setDate] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
 
+  useEffect(() => {
+    if (!listing?.id) return;
+    try {
+      const recentStr = localStorage.getItem("mt_recently_viewed");
+      let recentList: string[] = [];
+      if (recentStr) {
+        recentList = JSON.parse(recentStr);
+      }
+      if (!Array.isArray(recentList)) {
+        recentList = [];
+      }
+      recentList = recentList.filter((id) => id !== listing.id);
+      recentList.unshift(listing.id);
+      recentList = recentList.slice(0, 20);
+      localStorage.setItem("mt_recently_viewed", JSON.stringify(recentList));
+    } catch (e) {
+      console.warn("Failed to update recently viewed list:", e);
+    }
+  }, [listing?.id]);
+
   const sqLabel = `${listing.sqm} ${t("property.sqm")}`;
   const propertyType = listing.propertyType ?? "Condo";
   const petFriendly = listing.petFriendly ?? listing.amenities.includes("Pet Friendly");
   const minimumLease = listing.minimumLease ?? t("property.minimumLeaseFallback");
   const depositMonths = listing.depositMonths ?? 2;
-  
+
   // Dynamically format utility rates from database columns if present, otherwise use string fallback
   let utilityRates = listing.utilityRates ?? t("property.utilityRatesFallback");
   if (listing.electric_rate_type || listing.water_rate_type) {
@@ -97,7 +117,10 @@ function PropertyPage() {
     }
   }
 
-  const lineUrl = listing.landlord.lineUrl ?? "https://line.me/R/ti/p/@moderntrust";
+  const lineUrl = listing.landlord.lineUrl ||
+    (listing.landlord.lineId
+      ? `https://line.me/R/ti/p/~${listing.landlord.lineId.replace("@", "")}`
+      : "https://line.me/R/ti/p/@moderntrust");
 
   const openLine = () => {
     if (typeof window === "undefined") return;
@@ -168,28 +191,30 @@ function PropertyPage() {
         </Button>
       </div>
 
-      <div className="mt-6 grid gap-2 sm:grid-cols-4">
-        <div className="relative col-span-2 row-span-2 overflow-hidden rounded-2xl bg-muted">
+      <div className="mt-6 grid gap-2 sm:grid-cols-[2fr_1fr]">
+        <div className="relative overflow-hidden rounded-2xl bg-muted min-h-[250px] sm:h-[480px]">
           <img
-            src={listing.gallery[active]}
+            src={listing.gallery[active] || listing.image || "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1200&q=80"}
             alt=""
-            className="h-full max-h-[480px] w-full object-cover"
+            className="h-full w-full object-cover"
           />
         </div>
-        {listing.gallery.slice(0, 4).map((g: string, i: number) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => setActive(i)}
-            className={`relative overflow-hidden rounded-2xl bg-muted ${active === i ? "ring-2 ring-primary" : ""}`}
-          >
-            <img
-              src={g}
-              alt=""
-              className="h-full max-h-[235px] min-h-[120px] w-full object-cover"
-            />
-          </button>
-        ))}
+        <div className="grid grid-cols-2 gap-2 sm:max-h-[480px] overflow-y-auto pr-1">
+          {listing.gallery.slice(0, 5).map((g: string, i: number) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setActive(i)}
+              className={`relative overflow-hidden rounded-2xl bg-muted aspect-square sm:aspect-auto sm:h-[236px] ${active === i ? "ring-2 ring-primary" : ""}`}
+            >
+              <img
+                src={g}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_380px]">
@@ -409,7 +434,7 @@ function PropertyPage() {
             <div className="flex justify-center">
               <div className="bg-white p-4 rounded-xl border border-border">
                 <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(lineUrl)}`}
+                  src={listing.landlord.lineQrUrl || `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(lineUrl)}`}
                   alt="Line QR Code"
                   className="w-36 h-36 object-contain"
                 />
