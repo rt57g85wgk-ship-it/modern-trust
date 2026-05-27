@@ -67,7 +67,7 @@ export function EmailPasswordForm({ role, mode }: { role: Role; mode: Mode }) {
           void nav({ to: "/login" });
         }
       } else {
-        const { data, error } = await signIn(email.trim(), password);
+        const { data, error } = await signIn(email.trim(), password, role);
         console.log("Supabase signIn response:", { data, error });
         if (error) {
           toast.error(error.message);

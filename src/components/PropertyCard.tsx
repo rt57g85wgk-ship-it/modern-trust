@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Heart, Star, MapPin, BedDouble, Sparkles } from "lucide-react";
 import { useApp } from "@/lib/app-context";
@@ -16,7 +16,8 @@ export function PropertyCard({
   bestMatch?: boolean;
 }) {
   const { t } = useTranslation();
-  const { favorites, toggleFavorite } = useApp();
+  const navigate = useNavigate();
+  const { user, favorites, toggleFavorite } = useApp();
   const fav = favorites.includes(listing.id);
   const [imgError, setImgError] = useState(false);
 
@@ -69,6 +70,10 @@ export function PropertyCard({
           <button
             onClick={(e) => {
               e.preventDefault();
+              if (!user) {
+                void navigate({ to: "/login" });
+                return;
+              }
               toggleFavorite(listing.id);
             }}
             className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-background/90 shadow-soft backdrop-blur transition-transform hover:scale-110"

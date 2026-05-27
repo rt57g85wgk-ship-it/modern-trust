@@ -43,7 +43,8 @@ type Ctx = {
   user: User;
   favorites: string[];
   theme: "light" | "dark";
-  login: (u: NonNullable<User>) => void;
+  authLoading: boolean;
+  login: (u: NonNullable<User>) => Promise<void>;
   logout: () => Promise<void>;
   signUp: (
     email: string,
@@ -51,7 +52,7 @@ type Ctx = {
     name: string,
     role: Role,
   ) => Promise<{ data: any; error: any }>;
-  signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
+  signIn: (email: string, password: string, selectedRole?: Role) => Promise<{ data: any; error: any }>;
   toggleFavorite: (id: string) => void;
   toggleTheme: () => void;
   toggleLang: () => void;
@@ -81,6 +82,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -96,6 +98,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Listen to Supabase Auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("onAuthStateChange event fired:", event, "User ID:", session?.user?.id);
+      setAuthLoading(true);
       if (session?.user) {
         const sbUser = session.user;
         const metadata = sbUser.user_metadata || {};
@@ -200,6 +203,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setUser(null);
         }
       }
+      setAuthLoading(false);
     });
 
     return () => {
@@ -276,19 +280,57 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = (u: NonNullable<User>) => {
-    setUser(u);
-    localStorage.setItem("mt_user", JSON.stringify(u));
+  const login = async (u: NonNullable<User>) => {
+    setAuthLoading(true);
+    let freshUser = { ...u };
+    try {
+      const dbRoleValue = mapFrontendRoleToDb(u.role);
+      await supabase
+        .from("users")
+        .update({ role: dbRoleValue })
+        .eq("email", u.email);
+
+      const { data: dbUser } = await supabase
+        .from("users")
+        .select("*")
+        .eq("email", u.email)
+        .maybeSingle();
+      if (dbUser) {
+        freshUser = {
+          ...freshUser,
+          name: dbUser.name || freshUser.name,
+          role: mapDbRoleToFrontend(dbUser.role || freshUser.role),
+          verified: dbUser.is_verified ?? freshUser.verified,
+          avatar: dbUser.profile_image_url || freshUser.avatar || "",
+          bio: dbUser.bio || freshUser.bio || "",
+          phone: dbUser.phone_number || freshUser.phone || "",
+          idCardNumber: dbUser.id_card_number || freshUser.idCardNumber || "",
+          idCardImageUrl: dbUser.id_card_image_url || freshUser.idCardImageUrl || "",
+        };
+      }
+    } catch (e) {
+      console.warn("Failed to fetch fresh user role on login:", e);
+    }
+    setUser(freshUser);
+    localStorage.setItem("mt_user", JSON.stringify(freshUser));
+    setAuthLoading(false);
   };
 
   const logout = async () => {
+    setAuthLoading(true);
+    setUser(null);
+    setFavorites([]);
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("mt_user");
+      localStorage.removeItem("mt_fav");
+      sessionStorage.clear();
+    }
     try {
       await supabase.auth.signOut();
     } catch (e) {
       console.warn("Error signing out from Supabase:", e);
     }
-    setUser(null);
-    localStorage.removeItem("mt_user");
+    setAuthLoading(false);
   };
 
   const signUp = async (email: string, password: string, name: string, role: Role) => {
@@ -305,11 +347,64 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const signIn = async (email: string, password: string) => {
-    return await supabase.auth.signInWithPassword({
+  const signIn = async (email: string, password: string, selectedRole?: Role) => {
+    setAuthLoading(true);
+    const res = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    if (res.data?.user) {
+      try {
+        const userObj = res.data.user;
+
+        // If selectedRole is explicitly chosen on login page, update both user metadata and public table
+        if (selectedRole) {
+          const metadataPatch = {
+            ...userObj.user_metadata,
+            role: selectedRole,
+          };
+          await supabase.auth.updateUser({ data: metadataPatch });
+
+          const dbPatch = {
+            role: mapFrontendRoleToDb(selectedRole),
+          };
+          await supabase
+            .from("users")
+            .update(dbPatch)
+            .eq("user_id", userObj.id);
+        }
+
+        const { data: dbUser } = await supabase
+          .from("users")
+          .select("*")
+          .eq("user_id", userObj.id)
+          .maybeSingle();
+        
+        if (dbUser) {
+          const metadata = userObj.user_metadata || {};
+          const profile: UserProfile = {
+            name: dbUser.name || metadata.full_name || userObj.email?.split("@")[0] || "User",
+            email: dbUser.email || userObj.email || "",
+            role: mapDbRoleToFrontend(dbUser.role || metadata.role),
+            verified: dbUser.is_verified ?? !!metadata.verified,
+            avatar: dbUser.profile_image_url || metadata.avatar || "",
+            bio: dbUser.bio || metadata.bio || "",
+            phone: dbUser.phone_number || metadata.phone || "",
+            idCardNumber: dbUser.id_card_number || metadata.idCardNumber || "",
+            idCardImageUrl: dbUser.id_card_image_url || metadata.idCardImageUrl || "",
+            preferredArea: metadata.preferredArea || "",
+            moveInTimeline: metadata.moveInTimeline || "",
+            lifestyleTags: metadata.lifestyleTags || [],
+          };
+          setUser(profile);
+          localStorage.setItem("mt_user", JSON.stringify(profile));
+        }
+      } catch (e) {
+        console.warn("Failed to fetch user row upon signIn:", e);
+      }
+    }
+    setAuthLoading(false);
+    return res;
   };
 
   const toggleFavorite = (id: string) =>
@@ -360,6 +455,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         user,
         favorites,
         theme,
+        authLoading,
         login,
         logout,
         signUp,

@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
-import { User, Home as HomeIcon, ShieldCheck, Check } from "lucide-react";
+import { User, Home as HomeIcon, ShieldCheck, Check, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/lib/app-context";
@@ -15,15 +15,22 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user } = useApp();
+  const { user, authLoading } = useApp();
   const nav = useNavigate();
   const { t } = useTranslation();
+  const [role, setRole] = useState<"renter" | "landlord">("renter");
 
   useEffect(() => {
-    if (user) void nav({ to: "/dashboard" });
-  }, [user, nav]);
+    if (!authLoading && user) void nav({ to: "/dashboard" });
+  }, [user, authLoading, nav]);
 
-  const [role, setRole] = useState<"renter" | "landlord">("renter");
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">

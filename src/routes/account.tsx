@@ -15,6 +15,7 @@ import {
   Trash2,
   Upload,
   User as UserIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,15 +49,22 @@ const LIFESTYLE_TAGS = [
 ];
 
 function AccountPage() {
-  const { user, updateProfile, verifyIdentity } = useApp();
+  const { user, updateProfile, verifyIdentity, authLoading } = useApp();
   const nav = useNavigate();
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !user) {
-      const t = setTimeout(() => nav({ to: "/login" }), 50);
-      return () => clearTimeout(t);
+    if (!authLoading && !user) {
+      void nav({ to: "/login" });
     }
-  }, [user, nav]);
+  }, [user, authLoading, nav]);
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) return null;
 

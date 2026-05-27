@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -57,7 +57,8 @@ export const Route = createFileRoute("/property/$id")({
 
 function PropertyPage() {
   const { listing } = Route.useLoaderData();
-  const { favorites, toggleFavorite } = useApp();
+  const navigate = useNavigate();
+  const { user, favorites, toggleFavorite } = useApp();
   const { t } = useTranslation();
   const fav = favorites.includes(listing.id);
   const [active, setActive] = useState(0);
@@ -151,7 +152,17 @@ function PropertyPage() {
             )}
           </div>
         </div>
-        <Button variant="outline" onClick={() => toggleFavorite(listing.id)} className="gap-2">
+        <Button
+          variant="outline"
+          onClick={() => {
+            if (!user) {
+              void navigate({ to: "/login" });
+              return;
+            }
+            toggleFavorite(listing.id);
+          }}
+          className="gap-2"
+        >
           <Heart className={`h-4 w-4 ${fav ? "fill-destructive text-destructive" : ""}`} />
           {fav ? t("property.saved") : t("property.save")}
         </Button>
@@ -186,6 +197,12 @@ function PropertyPage() {
           <Link
             to="/profile/$id"
             params={{ id: landlordId }}
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+                void navigate({ to: "/login" });
+              }
+            }}
             className="flex items-center gap-3 border-b border-border pb-6 transition-colors hover:opacity-90"
           >
             <img
@@ -337,7 +354,13 @@ function PropertyPage() {
               className="mt-5 w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
               size="lg"
               disabled={!listing.available}
-              onClick={() => setContactOpen(true)}
+              onClick={() => {
+                if (!user) {
+                  void navigate({ to: "/login" });
+                  return;
+                }
+                setContactOpen(true);
+              }}
               style={{ backgroundColor: "#06C755", color: "white" }}
             >
               <MessageCircle className="h-6 w-6" />

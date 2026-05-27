@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -28,6 +28,7 @@ import { Slider } from "@/components/ui/slider";
 import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSupabaseListings } from "@/lib/supabase-listings";
+import { useApp } from "@/lib/app-context";
 
 export const Route = createFileRoute("/")({
   component: Landing,
@@ -50,6 +51,8 @@ export const Route = createFileRoute("/")({
 
 function Landing() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { user } = useApp();
   const IN_UNIT_AMENITIES: { key: string; label: string }[] = [
     { key: "ac", label: t("landing.amAc") },
     { key: "fan", label: t("landing.amFan") },
@@ -278,6 +281,10 @@ function Landing() {
                   onChange={(e) => setQ({ ...q, location: e.target.value })}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
+                      if (!user) {
+                        void navigate({ to: "/login" });
+                        return;
+                      }
                       if (!q.location.trim()) {
                         toast.error(t("landing.toastLocationRequired"));
                         return;
@@ -406,6 +413,10 @@ function Landing() {
                 size="lg"
                 className="h-12 w-full gap-2 px-6 text-base font-semibold md:h-full md:w-auto"
                 onClick={() => {
+                  if (!user) {
+                    void navigate({ to: "/login" });
+                    return;
+                  }
                   if (!q.location.trim()) {
                     toast.error(t("landing.toastLocationRequired"));
                     return;

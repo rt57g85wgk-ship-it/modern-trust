@@ -21,6 +21,7 @@ import {
   Compass,
   Upload,
   BadgeCheck,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,15 +75,22 @@ export const Route = createFileRoute("/dashboard")({
 
 function Dashboard() {
   const { t } = useTranslation();
-  const { user, switchRole, favorites, verifyIdentity } = useApp();
+  const { user, switchRole, favorites, verifyIdentity, authLoading } = useApp();
   const nav = useNavigate();
 
   useEffect(() => {
-    if (typeof window !== "undefined" && !user) {
-      const timer = setTimeout(() => nav({ to: "/login" }), 50);
-      return () => clearTimeout(timer);
+    if (!authLoading && !user) {
+      void nav({ to: "/login" });
     }
-  }, [user, nav]);
+  }, [user, authLoading, nav]);
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!user) {
     return (

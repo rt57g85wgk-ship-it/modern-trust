@@ -27,7 +27,7 @@ function GoogleAuthButtonOAuth({ role }: { role: Role }) {
         const email = u.email ?? "";
         const name = u.name?.trim() || (email ? email.split("@")[0] : "User");
         if (!email) throw new Error("noemail");
-        login({ name, email, role });
+        await login({ name, email, role });
         nav({ to: "/dashboard" });
       } catch {
         toast.error(t("auth.errors.googleFailed"));
@@ -68,7 +68,7 @@ export function GoogleAuthButton({ role }: { role: Role }) {
       await new Promise((r) => setTimeout(r, 900));
       const demoEmail = role === "landlord" ? "host.demo@gmail.com" : "renter.demo@gmail.com";
       const demoName = role === "landlord" ? "Demo Host" : "Demo Renter";
-      login({ name: demoName, email: demoEmail, role });
+      await login({ name: demoName, email: demoEmail, role });
       toast.success(t("auth.welcomeBack", { name: demoName }));
       await new Promise((r) => setTimeout(r, 250));
       nav({ to: "/dashboard" });
