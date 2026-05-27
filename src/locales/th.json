@@ -107,7 +107,7 @@
     "personalized": "เฉพาะคุณ",
     "recommendedTitle": "แนะนำสำหรับคุณ",
     "recommendedDesc": "คัดจากเจ้าของที่เลือกโปรโมท — จัดลำดับตามความเหมาะกับการค้นหา วันย้ายเข้า และงบของคุณ",
-    "matchingTitle": "คู่แท้ที่พักตรงใจคุณ (Matching Places)",
+    "matchingTitle": "Matching Places",
     "matchingCount": "พบ {{count}} ประกาศที่จับคู่",
     "matchingCount_plural": "พบ {{count}} ประกาศที่จับคู่",
     "matchingPromotedNote": " · เรียงตามความตรงใจที่สุด",

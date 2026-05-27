@@ -107,7 +107,7 @@
     "personalized": "Personalized",
     "recommendedTitle": "Recommended For You",
     "recommendedDesc": "Hand-picked from hosts investing in visibility — ranked by how well each home fits your search, dates, and budget.",
-    "matchingTitle": "Matching Places (Best Matches)",
+    "matchingTitle": "Matching Places",
     "matchingCount": "{{count}} matching listing found",
     "matchingCount_plural": "{{count}} matching listings found",
     "matchingPromotedNote": " · Ranked by highest match score",

@@ -536,6 +536,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
             images: finalImages.length > 0 ? finalImages : u.images,
             room_number: u.room_number || null,
             floor_level: u.floor_level !== "" && u.floor_level !== undefined && u.floor_level !== null ? Number(u.floor_level) : null,
+            promoted: u.promoted,
           })
           .eq("room_id", u.id);
 
@@ -613,6 +614,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
             amenities_in_room: u.amenities,
             images: finalImages,
             floor_level: u.floor_level !== "" && u.floor_level !== undefined && u.floor_level !== null ? Number(u.floor_level) : null,
+            promoted: u.promoted || false,
           });
 
         if (roomError) throw roomError;
@@ -776,16 +778,46 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   title={u.title}
                   monthlyRent={u.price}
                   promoted={u.promoted}
-                  onPromote={() =>
+                  onPromote={async () => {
                     setUnits((arr) =>
                       arr.map((x) => (x.id === u.id ? { ...x, promoted: true } : x)),
-                    )
-                  }
-                  onUnpromote={() =>
+                    );
+
+                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
+                    if (isUuid) {
+                      try {
+                        const { error } = await supabase
+                          .from("rooms")
+                          .update({ promoted: true })
+                          .eq("room_id", u.id);
+                        if (error) throw error;
+                        toast.success("Promoted listing successfully!");
+                      } catch (err: any) {
+                        console.error("Failed to update promote status:", err);
+                        toast.error("Failed to update status in database.");
+                      }
+                    }
+                  }}
+                  onUnpromote={async () => {
                     setUnits((arr) =>
                       arr.map((x) => (x.id === u.id ? { ...x, promoted: false } : x)),
-                    )
-                  }
+                    );
+
+                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
+                    if (isUuid) {
+                      try {
+                        const { error } = await supabase
+                          .from("rooms")
+                          .update({ promoted: false })
+                          .eq("room_id", u.id);
+                        if (error) throw error;
+                        toast.success("Removed promotion successfully!");
+                      } catch (err: any) {
+                        console.error("Failed to remove promotion:", err);
+                        toast.error("Failed to update status in database.");
+                      }
+                    }
+                  }}
                 />
                 <Select
                   value={u.available ? "available" : "unavailable"}
@@ -797,7 +829,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                       arr.map((x) => (x.id === u.id ? { ...x, available: isAvailable } : x)),
                     );
 
-                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
+                    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
                     if (isUuid) {
                       try {
                         const { error } = await supabase

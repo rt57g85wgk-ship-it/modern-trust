@@ -22,7 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { listings } from "@/lib/mock-data";
 import { PropertyCard, PropertyCardSkeleton } from "@/components/PropertyCard";
-import { bestMatchIds, sortByMatchScore } from "@/lib/listing-match";
+import { bestMatchIds, sortByMatchScore, scoreListing } from "@/lib/listing-match";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Slider } from "@/components/ui/slider";
 import { BarChart, Bar, Cell, ResponsiveContainer } from "recharts";
@@ -198,20 +198,47 @@ function Landing() {
   }, [bestMatches]);
 
   const generalListings = useMemo(() => {
-    if (submittedQuery === null) {
-      const promoted = sortedFiltered.filter((l) => l.promoted);
-      const regular = sortedFiltered.filter((l) => !l.promoted);
-      return [...promoted, ...regular];
-    }
+    // 1. Get all available listings
+    const availableListings = combinedListings.filter((l) => l.available);
 
-    if (filtered.length <= 3) return [];
-    
-    const rest = sortedFiltered.filter((l) => !bestMatchIdsSet.has(l.id));
-    const promotedRest = rest.filter((l) => l.promoted);
-    const regularRest = rest.filter((l) => !l.promoted);
-    
-    return [...promotedRest, ...regularRest];
-  }, [submittedQuery, filtered.length, sortedFiltered, bestMatchIdsSet]);
+    // 2. Classify each listing into Group 1, 2, or 3
+    const classified = availableListings.map((l) => {
+      const score = scoreListing(l, activeQuery);
+      
+      let group = 3;
+      if (l.promoted) {
+        group = 1;
+      } else {
+        const matchesLocation = !activeQuery.location || l.location.toLowerCase().includes(activeQuery.location.toLowerCase());
+        if (matchesLocation) {
+          group = 2;
+        } else {
+          group = 3;
+        }
+      }
+
+      return { listing: l, group, score };
+    });
+
+    // 3. Filter out regular listings that are already in best matches (to avoid duplicates)
+    const filteredClassified = classified.filter((item) => {
+      if (!item.listing.promoted && bestMatchIdsSet.has(item.listing.id)) {
+        return false;
+      }
+      return true;
+    });
+
+    // 4. Sort by Group ascending, then by Match Score descending
+    filteredClassified.sort((a, b) => {
+      if (a.group !== b.group) {
+        return a.group - b.group;
+      }
+      return b.score - a.score;
+    });
+
+    // 5. Return the sorted listings
+    return filteredClassified.map((item) => item.listing);
+  }, [combinedListings, activeQuery, bestMatchIdsSet]);
 
   const [currentPage, setCurrentPage] = useState(1);
 

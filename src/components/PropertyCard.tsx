@@ -50,12 +50,7 @@ export function PropertyCard({
           ) : (
             <div className="flex h-full items-center justify-center text-xs text-muted-foreground">{t("propertyCard.noImage")}</div>
           )}
-          {bestMatch && listing.available && (
-            <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-brand-cyan/40 bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-brand-cyan shadow-sm backdrop-blur-sm">
-              <Sparkles className="h-3.5 w-3.5 text-brand-cyan animate-pulse" />
-              {t("propertyCard.bestMatch")}
-            </span>
-          )}
+
           {!bestMatch && listing.promoted && listing.available && (
             <span className="absolute left-3 top-3 flex items-center gap-1 rounded-md border border-primary/40 bg-background/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-primary shadow-sm backdrop-blur-sm">
               <Sparkles className="h-3.5 w-3.5 text-primary" />
