@@ -628,12 +628,59 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
     try {
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deleteId);
       if (isUuid) {
-        const { error: rErr } = await supabase
+        // 1. Fetch room details to get building_id and image URLs
+        const { data: roomData, error: fetchErr } = await supabase
           .from("rooms")
-          .delete()
-          .eq("room_id", deleteId);
+          .select("building_id, images")
+          .eq("room_id", deleteId)
+          .maybeSingle();
 
-        if (rErr) throw rErr;
+        if (fetchErr) throw fetchErr;
+
+        if (roomData) {
+          // 2. Delete the room
+          const { error: rErr } = await supabase
+            .from("rooms")
+            .delete()
+            .eq("room_id", deleteId);
+
+          if (rErr) throw rErr;
+
+          // 3. Delete the associated building (cascades or cleans up building row)
+          if (roomData.building_id) {
+            const { error: bErr } = await supabase
+              .from("buildings")
+              .delete()
+              .eq("building_id", roomData.building_id);
+            
+            if (bErr) {
+              console.warn("Failed to delete associated building (might have other rooms):", bErr);
+            }
+          }
+
+          // 4. Delete the listing images from Supabase Storage
+          if (Array.isArray(roomData.images) && roomData.images.length > 0) {
+            const filePaths = roomData.images
+              .filter((url: string) => url.includes("room-images"))
+              .map((url: string) => {
+                const parts = url.split("/room-images/");
+                return parts[1] ? decodeURIComponent(parts[1]) : null;
+              })
+              .filter(Boolean) as string[];
+
+            if (filePaths.length > 0) {
+              const { error: storageErr } = await supabase.storage
+                .from("room-images")
+                .remove(filePaths);
+              
+              if (storageErr) {
+                console.error("Failed to delete images from storage:", storageErr);
+              } else {
+                console.log("Successfully deleted room images from storage:", filePaths);
+              }
+            }
+          }
+        }
       }
 
       setUnits((arr) => arr.filter((x) => x.id !== deleteId));
