@@ -1,127 +1,123 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { MessageSquare, X, Send, Sparkles } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
-
-type Msg = { role: "user" | "ai"; text: string };
-
-function seedReply(q: string, tr: (k: string) => string): string {
-  const lower = q.toLowerCase();
-  if (/hello|hi|hey/.test(lower)) return tr("chat.replyHello");
-  if (/recommend|suggest/.test(lower)) return tr("chat.replyRecommend");
-  if (/book|booking/.test(lower)) return tr("chat.replyBook");
-  if (/budget|price|cheap/.test(lower)) return tr("chat.replyBudget");
-  if (/location|where|area/.test(lower)) return tr("chat.replyLocation");
-  if (/safe|verified|trust/.test(lower)) return tr("chat.replyTrust");
-  return tr("chat.replyDefault");
-}
+import { useEffect } from "react";
+import { useLocation } from "@tanstack/react-router";
 
 export function ChatWidget() {
-  const { t, i18n } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [input, setInput] = useState("");
-  const [msgs, setMsgs] = useState<Msg[]>([{ role: "ai", text: t("chat.greeting") }]);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const pathname = location.pathname;
+
+  const isHomepage = pathname === "/";
+  const isDashboard = pathname.includes("/dashboard") || pathname.includes("/landlord") || pathname.includes("/renter");
+  const shouldShow = isHomepage || isDashboard;
 
   useEffect(() => {
-    setMsgs([{ role: "ai", text: i18n.t("chat.greeting") }]);
-  }, [i18n.language, i18n]);
+    if (typeof window === "undefined" || typeof document === "undefined") return;
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [msgs, open]);
+    const cleanupBotnoiElements = () => {
+      const generated = document.querySelectorAll('[id^="botnoi-"], [class^="botnoi-"], iframe[src*="botnoi"]');
+      generated.forEach(el => el.remove());
+    };
 
-  const send = useCallback(() => {
-    const q = input.trim();
-    if (!q) return;
-    setMsgs((m) => [...m, { role: "user", text: q }]);
-    setInput("");
-    setTimeout(() => setMsgs((m) => [...m, { role: "ai", text: seedReply(q, t) }]), 600);
-  }, [input, t]);
+    const clearBotnoiMemory = () => {
+      try {
+        Object.keys(localStorage).forEach(key => {
+          if (key.toLowerCase().includes("botnoi") || key.startsWith("bn_") || key.startsWith("bn-")) {
+            localStorage.removeItem(key);
+          }
+        });
+        Object.keys(sessionStorage).forEach(key => {
+          if (key.toLowerCase().includes("botnoi") || key.startsWith("bn_") || key.startsWith("bn-")) {
+            sessionStorage.removeItem(key);
+          }
+        });
+     
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf("=");
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          if (name.toLowerCase().includes("botnoi") || name.startsWith("bn")) {
+            document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          }
+        }
+      } catch (e) {
+        console.log("Botnoi storage and cookie clearance skipped");
+      }
+    };
+
+    if (!shouldShow) {
+      cleanupBotnoiElements();
+      return;
+    }
+
+    cleanupBotnoiElements();
+    clearBotnoiMemory();
+
+    if (!document.getElementById("bn-custom-style")) {
+      const style = document.createElement("style");
+      style.id = "bn-custom-style";
+      style.textContent = `
+        iframe[id^="botnoi-"], .bn-customerchat, #bn-root, [id^="botnoi-customerchat"], .botnoi-customerchat-container { 
+          bottom: 24px !important;   
+          right: 24px !important;    
+          z-index: 99999 !important; 
+        }
+        iframe[id^="botnoi-"] {
+          filter: drop-shadow(0 12px 30px rgba(0, 0, 0, 0.12)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.06)) !important;
+          transition: transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), filter 0.25s ease !important;
+        }
+        iframe[id^="botnoi-"]:hover {
+          transform: translateY(-5px) scale(1.02) !important;
+          filter: drop-shadow(0 20px 38px rgba(0, 0, 0, 0.16)) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.08)) !important;
+          cursor: pointer !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const initBotnoi = () => {
+      const win = window as any;
+      if (win.BN) {
+        try {
+          win.BN.init({ version: "1.0" });
+        } catch (e) {
+          console.log("Botnoi core reactivated with clean memory");
+        }
+      }
+    };
+
+    let script = document.getElementById("bn-jssdk") as HTMLScriptElement;
+    if (script) script.remove();
+
+    script = document.createElement("script");
+    script.id = "bn-jssdk";
+    script.async = true;
+    script.src = `https://console.botnoi.ai/customerchat/index.js?v=${Date.now()}`;
+    script.onload = () => {
+      setTimeout(initBotnoi, 150);
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      cleanupBotnoiElements();
+    };
+  }, [pathname, shouldShow]);
+
+  if (!shouldShow) return null;
 
   return (
-    <>
-      <motion.button
-        type="button"
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.5, type: "spring" }}
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-brand-gradient text-white shadow-glow transition-transform hover:scale-105"
-        aria-label={t("chat.open")}
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          {open ? (
-            <motion.span key="x" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }}>
-              <X className="h-6 w-6" />
-            </motion.span>
-          ) : (
-            <motion.span key="msg" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }}>
-              <MessageSquare className="h-6 w-6" />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </motion.button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ type: "spring", damping: 22 }}
-            className="fixed bottom-24 right-6 z-50 flex h-[500px] w-[360px] max-w-[calc(100vw-3rem)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card"
-          >
-            <div className="flex items-center justify-between border-b border-border bg-brand-gradient px-4 py-3 text-white">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/15">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold">{t("chat.title")}</p>
-                  <p className="text-[11px] text-white/70">{t("chat.subtitle")}</p>
-                </div>
-              </div>
-              <button type="button" onClick={() => setOpen(false)} className="rounded-md p-1 hover:bg-white/15" aria-label={t("common.close")}>
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-4">
-              {msgs.map((m, i) => (
-                <motion.div
-                  key={`${i}-${m.text.slice(0, 20)}`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm ${
-                      m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                    }`}
-                  >
-                    {m.text}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-            <div className="border-t border-border p-3">
-              <div className="flex items-center gap-2 rounded-xl border border-input bg-background px-3 py-2">
-                <input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && send()}
-                  placeholder={t("chat.placeholder")}
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                />
-                <Button size="icon" className="h-8 w-8" onClick={send} aria-label={t("chat.send")}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+    <div id="bn-root">
+      <div
+        className="bn-customerchat"
+        bot_id="6a0c0afb27dc008651083b76"
+        bot_logo="https://img1.pic.in.th/images/botnoi_group_logo-fotor-20260528143934.png"
+        bot_name="Nong BOTNOI"
+        theme_color="#e2f2ff"
+        locale="th"
+        logged_in_greeting="สวัสดีครับ มีอะไรให้น้องบอทช่วยไหมครับ"
+        greeting_message="สวัสดีครับ ผู้ช่วยน้องบอทน้อยเองครับ หากมีอะไรสงสัยเพิ่มเติมให้น้องบอทช่วยนะครับ หรือถ้าต้องการติดต่อแอดมินสามารถพิมพ์คำว่า 'แอดมิน' ได้เลยนะครับ
+"
+        default_open="false"
+      />
+    </div>
   );
 }
