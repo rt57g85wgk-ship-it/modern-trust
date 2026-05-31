@@ -191,6 +191,27 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
         lineId: landlordLineId,
         lineUrl: landlordLineUrl,
         lineQrUrl: landlordLineQrUrl,
+        phoneContactEnabled: (() => {
+          let enabled = landlordUser?.phone_contact_enabled ?? false;
+          if (typeof window !== "undefined") {
+            try {
+              const localUserStr = localStorage.getItem("mt_user");
+              if (localUserStr) {
+                const localUser = JSON.parse(localUserStr);
+                if (
+                  localUser &&
+                  localUser.phoneContactEnabled === true &&
+                  (building?.owner_id === localUser.id || landlordName === localUser.name)
+                ) {
+                  enabled = true;
+                }
+              }
+            } catch (e) {
+              console.warn("Failed to check local user premium status:", e);
+            }
+          }
+          return enabled;
+        })(),
       };
     })()
   };
@@ -248,7 +269,7 @@ export function mapDbRoomToUnit(room: any, building: any): Unit {
 
 export async function fetchSupabaseListings(): Promise<Listing[]> {
   try {
-    const { data: rooms, error } = await supabase
+    const { data: initialRooms, error: initialError } = await supabase
       .from("rooms")
       .select(`
         *,
@@ -268,10 +289,44 @@ export async function fetchSupabaseListings(): Promise<Listing[]> {
             phone_number,
             line_id,
             line_url,
-            line_qr_url
+            line_qr_url,
+            phone_contact_enabled
           )
         )
       `);
+
+    let rooms = initialRooms;
+    let error = initialError;
+
+    if (error && error.message.includes("phone_contact_enabled")) {
+      console.warn("phone_contact_enabled column not found in database, retrying without it...");
+      const retryResult = await supabase
+        .from("rooms")
+        .select(`
+          *,
+          buildings (
+            building_name,
+            address,
+            property_type,
+            latitude,
+            longitude,
+            zone_tag,
+            amenities_building,
+            owner_id,
+            users (
+              name,
+              is_verified,
+              email,
+              phone_number,
+              line_id,
+              line_url,
+              line_qr_url
+            )
+          )
+        `);
+      rooms = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       console.error("Error fetching listings from Supabase:", error);
@@ -297,7 +352,7 @@ export async function fetchSupabaseListings(): Promise<Listing[]> {
 
 export async function fetchSupabaseListingById(id: string): Promise<Listing | null> {
   try {
-    const { data: room, error } = await supabase
+    const { data: initialRoom, error: initialError } = await supabase
       .from("rooms")
       .select(`
         *,
@@ -317,12 +372,48 @@ export async function fetchSupabaseListingById(id: string): Promise<Listing | nu
             phone_number,
             line_id,
             line_url,
-            line_qr_url
+            line_qr_url,
+            phone_contact_enabled
           )
         )
       `)
       .eq("room_id", id)
       .maybeSingle();
+
+    let room = initialRoom;
+    let error = initialError;
+
+    if (error && error.message.includes("phone_contact_enabled")) {
+      console.warn("phone_contact_enabled column not found in database, retrying without it...");
+      const retryResult = await supabase
+        .from("rooms")
+        .select(`
+          *,
+          buildings (
+            building_name,
+            address,
+            property_type,
+            latitude,
+            longitude,
+            zone_tag,
+            amenities_building,
+            owner_id,
+            users (
+              name,
+              is_verified,
+              email,
+              phone_number,
+              line_id,
+              line_url,
+              line_qr_url
+            )
+          )
+        `)
+        .eq("room_id", id)
+        .maybeSingle();
+      room = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       console.error("Error fetching single listing from Supabase:", error);

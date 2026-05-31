@@ -26,6 +26,7 @@ export type UserProfile = {
   lineId?: string;
   lineUrl?: string;
   lineQrUrl?: string;
+  phoneContactEnabled?: boolean;
   // Renter extras
   preferredArea?: string;
   moveInTimeline?: string;
@@ -119,6 +120,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           lineId: metadata.lineId || "",
           lineUrl: metadata.lineUrl || "",
           lineQrUrl: metadata.lineQrUrl || "",
+          phoneContactEnabled: !!metadata.phoneContactEnabled,
           preferredArea: metadata.preferredArea || "",
           moveInTimeline: metadata.moveInTimeline || "",
           lifestyleTags: metadata.lifestyleTags || [],
@@ -151,6 +153,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 lineId: dbUser.line_id || metadata.lineId || "",
                 lineUrl: dbUser.line_url || metadata.lineUrl || "",
                 lineQrUrl: dbUser.line_qr_url || metadata.lineQrUrl || "",
+                phoneContactEnabled: dbUser.phone_contact_enabled ?? metadata.phoneContactEnabled ?? false,
                 preferredArea: metadata.preferredArea || "",
                 moveInTimeline: metadata.moveInTimeline || "",
                 lifestyleTags: metadata.lifestyleTags || [],
@@ -171,6 +174,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 line_id: profile.lineId || null,
                 line_url: profile.lineUrl || null,
                 line_qr_url: profile.lineQrUrl || null,
+                phone_contact_enabled: profile.phoneContactEnabled || false,
               };
               console.log("Inserting new row into 'users' table:", newDbUser);
               const { error: insErr } = await supabase.from("users").insert(newDbUser);
@@ -202,6 +206,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               lineId: metadata.lineId || localUser.lineId,
               lineUrl: metadata.lineUrl || localUser.lineUrl,
               lineQrUrl: metadata.lineQrUrl || localUser.lineQrUrl,
+              phoneContactEnabled: metadata.phoneContactEnabled !== undefined ? !!metadata.phoneContactEnabled : localUser.phoneContactEnabled,
             };
           }
         }
@@ -278,6 +283,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           lineId: next.lineId,
           lineUrl: next.lineUrl,
           lineQrUrl: next.lineQrUrl,
+          phoneContactEnabled: next.phoneContactEnabled,
           preferredArea: next.preferredArea,
           moveInTimeline: next.moveInTimeline,
           lifestyleTags: next.lifestyleTags,
@@ -304,6 +310,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           line_id: next.lineId || null,
           line_url: next.lineUrl || null,
           line_qr_url: next.lineQrUrl || null,
+          phone_contact_enabled: next.phoneContactEnabled || false,
         };
         console.log("Updating DB users table row with patch:", dbPatch);
         const { error: dbError } = await supabase
@@ -354,6 +361,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           lineId: dbUser.line_id || freshUser.lineId || "",
           lineUrl: dbUser.line_url || freshUser.lineUrl || "",
           lineQrUrl: dbUser.line_qr_url || freshUser.lineQrUrl || "",
+          phoneContactEnabled: dbUser.phone_contact_enabled ?? freshUser.phoneContactEnabled ?? false,
         };
       }
     } catch (e) {
@@ -442,6 +450,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             lineId: dbUser.line_id || metadata.lineId || "",
             lineUrl: dbUser.line_url || metadata.lineUrl || "",
             lineQrUrl: dbUser.line_qr_url || metadata.lineQrUrl || "",
+            phoneContactEnabled: dbUser.phone_contact_enabled ?? !!metadata.phoneContactEnabled,
             preferredArea: metadata.preferredArea || "",
             moveInTimeline: metadata.moveInTimeline || "",
             lifestyleTags: metadata.lifestyleTags || [],
