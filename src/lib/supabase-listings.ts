@@ -196,7 +196,14 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
           if (typeof window !== "undefined") {
             try {
               // 1. Check browser-wide persistent premium landlords list
-              const premiumListStr = localStorage.getItem("mt_premium_landlords");
+              let premiumListStr = localStorage.getItem("mt_premium_landlords");
+              if (premiumListStr === null) {
+                // First-time visit: initialize with default test premium landlord
+                const defaultList = ["Chanya Chumdee", "8e667910-c928-43e4-8d0a-f3eb6c0c77b3", "admintest@gmail.com"];
+                localStorage.setItem("mt_premium_landlords", JSON.stringify(defaultList));
+                premiumListStr = JSON.stringify(defaultList);
+              }
+
               if (premiumListStr) {
                 const premiumList = JSON.parse(premiumListStr);
                 if (Array.isArray(premiumList) && (
