@@ -195,15 +195,30 @@ export function mapDbRoomToListing(room: any, building: any): Listing {
           let enabled = landlordUser?.phone_contact_enabled ?? false;
           if (typeof window !== "undefined") {
             try {
-              const localUserStr = localStorage.getItem("mt_user");
-              if (localUserStr) {
-                const localUser = JSON.parse(localUserStr);
-                if (
-                  localUser &&
-                  localUser.phoneContactEnabled === true &&
-                  (building?.owner_id === localUser.id || landlordName === localUser.name)
-                ) {
+              // 1. Check browser-wide persistent premium landlords list
+              const premiumListStr = localStorage.getItem("mt_premium_landlords");
+              if (premiumListStr) {
+                const premiumList = JSON.parse(premiumListStr);
+                if (Array.isArray(premiumList) && (
+                  premiumList.includes(landlordName) || 
+                  (building?.owner_id && premiumList.includes(building.owner_id))
+                )) {
                   enabled = true;
+                }
+              }
+
+              // 2. Fallback to active logged-in user state
+              if (!enabled) {
+                const localUserStr = localStorage.getItem("mt_user");
+                if (localUserStr) {
+                  const localUser = JSON.parse(localUserStr);
+                  if (
+                    localUser &&
+                    localUser.phoneContactEnabled === true &&
+                    (building?.owner_id === localUser.id || landlordName === localUser.name)
+                  ) {
+                    enabled = true;
+                  }
                 }
               }
             } catch (e) {

@@ -14,6 +14,7 @@ export type PaymentMethod = {
 };
 
 export type UserProfile = {
+  id?: string;
   name: string;
   email: string;
   role: Role;
@@ -108,6 +109,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         console.log("Session user metadata:", metadata);
         
         let profile: UserProfile = {
+          id: sbUser.id,
           name: metadata.full_name || sbUser.email?.split("@")[0] || "User",
           email: sbUser.email || "",
           role: mapDbRoleToFrontend(metadata.role || "renter"),
@@ -141,6 +143,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
             if (dbUser) {
               profile = {
+                id: dbUser.user_id || profile.id,
                 name: dbUser.name || profile.name,
                 email: dbUser.email || profile.email,
                 role: mapDbRoleToFrontend(dbUser.role || metadata.role),
@@ -195,6 +198,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             const localUser = JSON.parse(localUserStr);
             profile = {
               ...localUser,
+              id: sbUser.id || localUser.id,
               name: metadata.full_name || localUser.name,
               role: mapDbRoleToFrontend(metadata.role || localUser.role),
               verified: metadata.verified !== undefined ? !!metadata.verified : localUser.verified,
@@ -259,6 +263,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const key = userEmail ? `mt_fav_${userEmail}` : "mt_fav_anon";
     localStorage.setItem(key, JSON.stringify(favorites));
   }, [favorites, user]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !user) return;
+    if (user.role === "landlord") {
+      try {
+        const premiumListStr = localStorage.getItem("mt_premium_landlords");
+        let premiumList: string[] = [];
+        if (premiumListStr) {
+          try {
+            const parsed = JSON.parse(premiumListStr);
+            if (Array.isArray(parsed)) {
+              premiumList = parsed;
+            }
+          } catch (e) {
+            console.error("Error parsing premium list:", e);
+          }
+        }
+
+        const landlordName = user.name;
+        const landlordEmail = user.email;
+        const landlordId = user.id;
+
+        const identifiers = [landlordName, landlordEmail, landlordId].filter(Boolean) as string[];
+
+        let updatedList = [...premiumList];
+        if (user.phoneContactEnabled) {
+          // Add all identifiers if not already present
+          identifiers.forEach((id) => {
+            if (!updatedList.includes(id)) {
+              updatedList.push(id);
+            }
+          });
+        } else {
+          // Remove all identifiers
+          updatedList = updatedList.filter((id) => !identifiers.includes(id));
+        }
+
+        localStorage.setItem("mt_premium_landlords", JSON.stringify(updatedList));
+      } catch (e) {
+        console.warn("Failed to sync mt_premium_landlords:", e);
+      }
+    }
+  }, [user]);
 
   const persist = async (next: NonNullable<User>) => {
     setUser(next);
@@ -350,6 +397,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (dbUser) {
         freshUser = {
           ...freshUser,
+          id: dbUser.user_id || freshUser.id,
           name: dbUser.name || freshUser.name,
           role: mapDbRoleToFrontend(dbUser.role || freshUser.role),
           verified: dbUser.is_verified ?? freshUser.verified,
@@ -438,6 +486,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (dbUser) {
           const metadata = userObj.user_metadata || {};
           const profile: UserProfile = {
+            id: dbUser.user_id || userObj.id,
             name: dbUser.name || metadata.full_name || userObj.email?.split("@")[0] || "User",
             email: dbUser.email || userObj.email || "",
             role: mapDbRoleToFrontend(dbUser.role || metadata.role),
