@@ -149,10 +149,6 @@ function Landing() {
   }, []);
 
   const handleSearch = async () => {
-    if (!user) {
-      void navigate({ to: "/login" });
-      return;
-    }
     if (!q.location.trim()) {
       toast.error(t("landing.toastLocationRequired"));
       return;
@@ -163,51 +159,53 @@ function Landing() {
     const storageKey = user ? `mt_search_prefs_${user.email}` : "mt_search_prefs_anon";
     localStorage.setItem(storageKey, JSON.stringify(q));
 
-    // Save to Supabase
-    try {
-      const { data: { user: sbUser } } = await supabase.auth.getUser();
-      if (sbUser) {
-        let minB: number | null = null;
-        let maxB: number | null = null;
-        if (q.budget !== "any") {
-          const [min, max] = q.budget.split("-").map(Number);
-          minB = min ?? null;
-          maxB = max ?? null;
-        }
+    // Save to Supabase if logged in
+    if (user) {
+      try {
+        const { data: { user: sbUser } } = await supabase.auth.getUser();
+        if (sbUser) {
+          let minB: number | null = null;
+          let maxB: number | null = null;
+          if (q.budget !== "any") {
+            const [min, max] = q.budget.split("-").map(Number);
+            minB = min ?? null;
+            maxB = max ?? null;
+          }
 
-        const requirements = {
-          user_id: sbUser.id,
-          min_budget: minB,
-          max_budget: maxB,
-          location_name: q.location,
-          location_lat: 13.7563, // Default lat
-          location_lng: 100.5018, // Default lng
-          radius_km: q.maxDistance,
-          property_type: q.propertyType,
-          room_layout: q.room,
-          pet_friendly: q.pet,
-          lease_term: q.lease || null,
-          preferred_amenities: q.amenities,
-          updated_at: new Date().toISOString(),
-        };
+          const requirements = {
+            user_id: sbUser.id,
+            min_budget: minB,
+            max_budget: maxB,
+            location_name: q.location,
+            location_lat: 13.7563, // Default lat
+            location_lng: 100.5018, // Default lng
+            radius_km: q.maxDistance,
+            property_type: q.propertyType,
+            room_layout: q.room,
+            pet_friendly: q.pet,
+            lease_term: q.lease || null,
+            preferred_amenities: q.amenities,
+            updated_at: new Date().toISOString(),
+          };
 
-        const { error } = await supabase
-          .from("tenant_requirements")
-          .upsert(requirements, { onConflict: "user_id" });
+          const { error } = await supabase
+            .from("tenant_requirements")
+            .upsert(requirements, { onConflict: "user_id" });
 
-        if (error) {
-          console.error("Error saving requirements:", error);
-          toast.error(t("landing.toastSavePreferencesError"));
+          if (error) {
+            console.error("Error saving requirements:", error);
+            toast.error(t("landing.toastSavePreferencesError"));
+          } else {
+            toast.success(t("landing.toastSavePreferencesSuccess"));
+          }
         } else {
+          // Fallback success feedback for mock/simulated login flows
           toast.success(t("landing.toastSavePreferencesSuccess"));
         }
-      } else {
-        // Fallback success feedback for mock/simulated login flows
-        toast.success(t("landing.toastSavePreferencesSuccess"));
+      } catch (err) {
+        console.error("Error upserting match preferences:", err);
+        toast.error(t("landing.toastSavePreferencesError"));
       }
-    } catch (err) {
-      console.error("Error upserting match preferences:", err);
-      toast.error(t("landing.toastSavePreferencesError"));
     }
 
     const el = document.getElementById("recommended");
