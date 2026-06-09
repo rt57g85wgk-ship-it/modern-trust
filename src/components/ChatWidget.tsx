@@ -7,7 +7,11 @@ export function ChatWidget() {
 
   const isHomepage = pathname === "/";
   const isDashboard = pathname.includes("/dashboard") || pathname.includes("/landlord") || pathname.includes("/renter");
-  const shouldShow = isHomepage || isDashboard;
+  const isPropertyDetail = pathname.includes("/property/");
+  const shouldShow = isHomepage || isDashboard || isPropertyDetail;
+
+  // Extract room_id if on property detail page
+  const roomId = isPropertyDetail ? pathname.split("/").pop() : null;
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof document === "undefined") return;
@@ -78,7 +82,18 @@ export function ChatWidget() {
       const win = window as any;
       if (win.BN) {
         try {
-          win.BN.init({ version: "1.0" });
+          // Pass room_id as metadata/parameters to VoiceBot
+          const initOptions: any = { version: "1.0" };
+          
+          if (roomId) {
+            initOptions.parameters = { room_id: roomId };
+            initOptions.metadata = { room_id: roomId };
+            // Set global variable as fallback for Botnoi SDK to pick up
+            win.botnoi_room_id = roomId;
+          }
+
+          win.BN.init(initOptions);
+          console.log("Botnoi initialized with options:", initOptions);
         } catch (e) {
           console.log("Botnoi core reactivated with clean memory");
         }
