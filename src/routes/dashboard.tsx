@@ -303,7 +303,7 @@ function RenterView({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
+        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2 flex flex-col">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
@@ -385,27 +385,33 @@ function RenterView({
 function VerificationPanel({ verified }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   return (
-    <div>
-      <div className="flex items-center gap-2">
-        <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
-        <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
-        {verified && (
-          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
-            <Check className="h-3 w-3" /> {t("dashboard.verified")}
-          </span>
-        )}
+    <div className="grow flex flex-col justify-between">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
+          <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
+          {verified && (
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+              <Check className="h-3 w-3" /> {t("dashboard.verified")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
+        </p>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
-      </p>
+
+
+
       {!verified && (
-        <Link to="/account">
-          <Button className="mt-4 gap-2">
+        <Link to="/verify-identity" className="flex justify-center">
+          <Button className="mt-4 gap-2 grow">
             <Upload className="h-4 w-4" /> Complete Verification
           </Button>
         </Link>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
 
@@ -521,8 +527,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
       if (rErr) throw rErr;
 
       const mappedUnits = (rooms || []).map((room: any) => {
-        const building = Array.isArray(room.buildings) 
-          ? room.buildings[0] 
+        const building = Array.isArray(room.buildings)
+          ? room.buildings[0]
           : room.buildings;
         return mapDbRoomToUnit(room, building);
       });
@@ -546,7 +552,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
       const isExisting = exists(units, u.id);
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
       const owner_id = await requireOwnerId();
-      
+
       if (isExisting && isUuid) {
         // Upload new images to Supabase Storage if any
         const uploadedUrls: string[] = [];
@@ -722,7 +728,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               .from("buildings")
               .delete()
               .eq("building_id", roomData.building_id);
-            
+
             if (bErr) {
               console.warn("Failed to delete associated building (might have other rooms):", bErr);
             }
@@ -742,7 +748,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               const { error: storageErr } = await supabase.storage
                 .from("room-images")
                 .remove(filePaths);
-              
+
               if (storageErr) {
                 console.error("Failed to delete images from storage:", storageErr);
               } else {
@@ -887,7 +893,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   onValueChange={async (v) => {
                     const isAvailable = v === "available";
                     const statusText = isAvailable ? "AVAILABLE" : "OCCUPIED";
-                    
+
                     setUnits((arr) =>
                       arr.map((x) => (x.id === u.id ? { ...x, available: isAvailable } : x)),
                     );
@@ -943,8 +949,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         </div>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <section className="rounded-2xl border border-border bg-card p-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 ">
+        <section className="rounded-2xl border border-border bg-card p-6 flex flex-col">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
@@ -969,9 +975,9 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   </span>
                 )}
               </div>
-              
+
               <p className="text-xs text-muted-foreground leading-relaxed">
-                {user.phoneContactEnabled 
+                {user.phoneContactEnabled
                   ? "เปิดใช้งานปุ่มโทรตรงแล้ว ผู้เช่าสามารถโทรหาคุณโดยตรงผ่านปุ่มบนหน้าประกาศของคุณ"
                   : "แสดงปุ่มโทรศัพท์มือถือบนหน้าประกาศของคุณเพื่อเพิ่มโอกาสในการปล่อยเช่าได้เร็วขึ้น"}
               </p>
@@ -1177,7 +1183,7 @@ function ListingFormDialog({
 
   const addImageUrls = (files: FileList | File[] | null) => {
     if (!files || !files.length) return;
-    
+
     const fileArray = Array.from(files as File[]);
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -1194,7 +1200,7 @@ function ListingFormDialog({
     setForm((prev) => {
       const currentImages = prev.images.filter(src => src !== defaultThumb);
       const remainingSlots = 5 - currentImages.length;
-      
+
       if (remainingSlots <= 0) {
         toast.error("อัปโหลดได้สูงสุด 5 รูปเท่านั้น");
         return prev;
@@ -1208,12 +1214,12 @@ function ListingFormDialog({
       const urls = filesToAdd.map((f) => URL.createObjectURL(f));
       const newImages = [...currentImages, ...urls];
       const newImageFiles = [...(prev.imageFiles || []), ...filesToAdd];
-      
-      return { 
-        ...prev, 
-        images: newImages, 
-        imageFiles: newImageFiles, 
-        image: newImages[0] ?? prev.image 
+
+      return {
+        ...prev,
+        images: newImages,
+        imageFiles: newImageFiles,
+        image: newImages[0] ?? prev.image
       };
     });
   };
@@ -1223,10 +1229,10 @@ function ListingFormDialog({
       const currentImages = prev.images.filter(src => src !== defaultThumb);
       const target = currentImages[idx];
       if (target?.startsWith("blob:")) URL.revokeObjectURL(target);
-      
+
       const nextImages = currentImages.filter((_, i) => i !== idx);
       const nextFiles = prev.imageFiles ? prev.imageFiles.filter((_, i) => i !== idx) : [];
-      
+
       const finalImages = nextImages;
       return { ...prev, images: finalImages, imageFiles: nextFiles, image: finalImages[0] || "" };
     });
@@ -1805,8 +1811,8 @@ function PromoteToggle({
       <button
         onClick={() => (promoted ? onUnpromote() : setOpen(true))}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${promoted
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground hover:bg-muted/70"
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-muted/70"
           }`}
       >
         <Sparkles className="h-3 w-3" />{" "}
