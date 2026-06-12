@@ -180,7 +180,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 phone_contact_enabled: profile.phoneContactEnabled || false,
               };
               console.log("Inserting new row into 'users' table:", newDbUser);
-              const { error: insErr } = await supabase.from("users").insert(newDbUser);
+              let insErr = (await supabase.from("users").insert(newDbUser)).error;
+              if (insErr && (insErr.code === "PGRST204" || insErr.message?.includes("phone_contact_enabled"))) {
+                console.warn("Retrying insert without 'phone_contact_enabled' due to missing column...");
+                const fallbackNewUser = { ...newDbUser };
+                delete (fallbackNewUser as any).phone_contact_enabled;
+                insErr = (await supabase.from("users").insert(fallbackNewUser)).error;
+              }
               if (insErr) {
                 console.error("Failed to insert new user row:", insErr);
               } else {
@@ -360,10 +366,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
           phone_contact_enabled: next.phoneContactEnabled || false,
         };
         console.log("Updating DB users table row with patch:", dbPatch);
-        const { error: dbError } = await supabase
+        let { error: dbError } = await supabase
           .from("users")
           .update(dbPatch)
           .eq("user_id", session.user.id);
+        
+        if (dbError && (dbError.code === "PGRST204" || dbError.message?.includes("phone_contact_enabled"))) {
+          console.warn("Retrying database update without 'phone_contact_enabled' due to missing column...");
+          const fallbackPatch = { ...dbPatch };
+          delete (fallbackPatch as any).phone_contact_enabled;
+          const retryResult = await supabase
+            .from("users")
+            .update(fallbackPatch)
+            .eq("user_id", session.user.id);
+          dbError = retryResult.error;
+        }
         
         if (dbError) {
           console.error("Error updating Supabase 'users' table:", dbError);
