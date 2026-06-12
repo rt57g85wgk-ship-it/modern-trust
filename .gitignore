@@ -1,0 +1,19 @@
+# Python virtual environment
+ProjEnv/
+venv/
+.venv/
+
+# Environment variables
+.env
+
+# Ignore cloned repo
+modern-trust/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# macOS
+.DS_Store

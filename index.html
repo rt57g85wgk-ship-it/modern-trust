@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route Planner</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>Route Planner</h1>
+
+        <!-- Search Area -->
+        <div class="card">
+
+            <div class="input-group">
+                <input
+                    id="origin"
+                    type="text"
+                    placeholder="Start Location">
+            </div>
+
+            <div class="input-group">
+                <input
+                    id="destination"
+                    type="text"
+                    placeholder="Destination">
+            </div>
+
+            <div class="button-row">
+
+                <button onclick="useMyLocation()">
+                    📍 My Location
+                </button>
+
+                <button onclick="getRoute()">
+                    🚗 Get Route
+                </button>
+
+                <button onclick="saveCurrentRoute()">
+                    💾 Save Route
+                </button>
+
+            </div>
+
+            <div class="button-row">
+
+                <button onclick="shareRoute()">
+                    🔗 Share
+                </button>
+
+                <button onclick="openGoogleMaps()">
+                    🗺 Open Google Maps
+                </button>
+
+            </div>
+
+        </div>
+
+        <!-- Status Panel -->
+        <div id="panel" class="card">
+            Ready
+        </div>
+
+        <!-- Map -->
+        <div id="map"></div>
+
+        <!-- Nearby Search -->
+        <div class="card">
+
+            <h2>Nearby Search</h2>
+
+            <div class="button-row">
+
+                <button onclick="searchNearby('restaurant')">
+                    🍜 Restaurant
+                </button>
+
+                <button onclick="searchNearby('cafe')">
+                    ☕ Cafe
+                </button>
+
+                <button onclick="searchNearby('gas_station')">
+                    ⛽ Gas Station
+                </button>
+
+            </div>
+
+            <ul id="nearbyList"></ul>
+
+        </div>
+
+        <!-- Favorites -->
+        <div class="card">
+
+            <h2>Favorite Places</h2>
+
+            <div class="input-group">
+
+                <input
+                    id="favoriteName"
+                    placeholder="Favorite Name">
+
+            </div>
+
+            <button onclick="saveFavorite()">
+                ⭐ Save Favorite
+            </button>
+
+            <ul id="favoriteList"></ul>
+
+        </div>
+
+        <!-- Saved Routes -->
+        <div class="card">
+
+            <h2>Saved Routes</h2>
+
+            <ul id="routeList"></ul>
+
+        </div>
+
+    </div>
+
+    <!-- Storage -->
+    <script src="js/storage.js"></script>
+
+    <!-- IndexedDB -->
+    <script src="js/db.js"></script>
+
+    <!-- Main App -->
+    <script src="js/app.js"></script>
+
+</body>
+</html>
