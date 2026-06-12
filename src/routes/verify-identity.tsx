@@ -251,6 +251,7 @@ function VerifyIdentityPage() {
                 <div className="space-y-3 rounded-xl bg-muted/40 p-4">
                   <DataRow label="เลขบัตรประชาชน" value={parsed.idNumber} />
                   <DataRow label="ชื่อ-นามสกุล (ภาษาไทย)" value={parsed.fullNameTh} />
+                  <DataRow label="Name (English)" value={parsed.fullNameEn} />
                   <DataRow label="วันหมดอายุ" value={parsed.expiry} />
                 </div>
 
