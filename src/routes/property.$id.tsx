@@ -333,13 +333,11 @@ function PropertyPage() {
 
           <section className="border-t border-border py-6">
             <h2 className="text-lg font-semibold">{t("property.location")}</h2>
-            <div className="mt-4 flex h-64 items-center justify-center rounded-2xl border border-dashed border-border bg-muted/40 bg-grid">
-              <div className="text-center">
-                <MapPin className="mx-auto h-8 w-8 text-primary" />
-                <p className="mt-2 text-sm font-medium">{listing.location}</p>
-                <p className="text-xs text-muted-foreground">{t("property.mapPreview")}</p>
-              </div>
+            <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span>{listing.location}</span>
             </div>
+            <PropertyMap location={listing.location} />
           </section>
 
           <section className="border-t border-border py-6">
@@ -495,6 +493,49 @@ function PropertyPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function PropertyMap({ location }: { location: string }) {
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+  const query = encodeURIComponent(`${location}, Bangkok, Thailand`);
+  const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-2xl border border-border">
+      {apiKey ? (
+        <iframe
+          title="Property location"
+          width="100%"
+          height="320"
+          style={{ border: 0 }}
+          loading="lazy"
+          allowFullScreen
+          referrerPolicy="no-referrer-when-downgrade"
+          src={`https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${query}&zoom=15`}
+        />
+      ) : (
+        <iframe
+          title="Property location"
+          width="100%"
+          height="320"
+          style={{ border: 0 }}
+          loading="lazy"
+          src={`https://www.google.com/maps?q=${query}&output=embed`}
+        />
+      )}
+      <div className="flex items-center justify-between border-t border-border bg-muted/30 px-4 py-2">
+        <span className="text-xs text-muted-foreground">{location}</span>
+        <a
+          href={googleMapsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        >
+          <MapPin className="h-3 w-3" /> Open in Google Maps
+        </a>
+      </div>
     </div>
   );
 }
