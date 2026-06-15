@@ -60,7 +60,10 @@ function VerifyIdentityPage() {
   const handleScan = useCallback(async (file: File) => {
     setScanState("scanning");
     setParsed(null);
-    setPreview(URL.createObjectURL(file));
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return URL.createObjectURL(file);
+    });
 
     try {
       // Dynamic import to avoid loading 3MB WASM on pages that don't need it
@@ -73,7 +76,7 @@ function VerifyIdentityPage() {
         },
       });
       const text = result.data.text;
-      console.log(text);
+
       const data = parseThaiIdCard(text);
       setParsed(data);
       setScanState(data.idNumber ? "done" : "error");
@@ -94,7 +97,7 @@ function VerifyIdentityPage() {
     if (!parsed?.idNumber) return;
     setConfirming(true);
     try {
-      // Only pass the idNumber for metadata — image is NOT stored per spec
+      // This route skips image upload per spec — /account flow stores it separately
       await verifyIdentity(parsed.idNumber);
       toast.success("ยืนยันตัวตนสำเร็จ!");
       void nav({ to: "/dashboard" });
@@ -109,7 +112,10 @@ function VerifyIdentityPage() {
   const reset = () => {
     setScanState("idle");
     setParsed(null);
-    setPreview(null);
+    setPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
   };
 
   if (authLoading) {

@@ -80,7 +80,8 @@ function extractThaiName(text: string): string | null {
   // Strategy 2: Find the line containing "ชื่อตัว" (name label on card)
   // and extract Thai words from it — skip the label itself
   const lines = text.split("\n");
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (/ชื่อตัว/.test(line) || /ชื่อเก/.test(line)) {
       // Grab all Thai words from this line
       const words = line.match(THAI_WORD) || [];
@@ -97,9 +98,8 @@ function extractThaiName(text: string): string | null {
       }
       if (nameWords.length === 1) {
         // Check next line for last name
-        const idx = lines.indexOf(line);
-        if (idx + 1 < lines.length) {
-          const nextWords = lines[idx + 1].match(THAI_WORD) || [];
+        if (i + 1 < lines.length) {
+          const nextWords = lines[i + 1].match(THAI_WORD) || [];
           const nextName = nextWords.filter((w) => w.length >= 2);
           if (nextName.length > 0) {
             return `${nameWords[0]} ${nextName[0]}`;
