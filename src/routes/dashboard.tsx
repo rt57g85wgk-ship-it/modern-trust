@@ -406,11 +406,10 @@ function VerificationPanel({ verified }: { verified: boolean; onVerify: () => vo
       {!verified && (
         <Link to="/verify-identity" className="flex justify-center">
           <Button className="mt-4 gap-2 grow">
-            <Upload className="h-4 w-4" /> Complete Verification
+            <Upload className="h-4 w-4" /> {t("dashboard.completeVerification")}
           </Button>
         </Link>
-      )
-      }
+      )}
     </div >
   );
 }

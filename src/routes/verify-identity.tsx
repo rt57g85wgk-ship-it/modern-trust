@@ -13,9 +13,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useApp } from "@/lib/app-context";
 import { parseThaiIdCard, type ParsedThaiIdCard } from "@/lib/ocr";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export const Route = createFileRoute("/verify-identity")({
   component: VerifyIdentityPage,
@@ -34,6 +37,7 @@ export const Route = createFileRoute("/verify-identity")({
 type ScanState = "idle" | "scanning" | "done" | "error";
 
 function VerifyIdentityPage() {
+  const { t } = useTranslation();
   const { user, verifyIdentity, authLoading } = useApp();
   const nav = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -42,6 +46,7 @@ function VerifyIdentityPage() {
   const [parsed, setParsed] = useState<ParsedThaiIdCard | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
 
   // Redirect if already verified
   useEffect(() => {
@@ -99,11 +104,11 @@ function VerifyIdentityPage() {
     try {
       // This route skips image upload per spec — /account flow stores it separately
       await verifyIdentity(parsed.idNumber);
-      toast.success("ยืนยันตัวตนสำเร็จ!");
+      toast.success(t("verifyIdentity.toastSuccess"));
       void nav({ to: "/dashboard" });
     } catch (err: any) {
       console.error("Verify error:", err);
-      toast.error(err.message || "ยืนยันตัวตนไม่สำเร็จ");
+      toast.error(err.message || t("verifyIdentity.toastError"));
     } finally {
       setConfirming(false);
     }
@@ -135,7 +140,7 @@ function VerifyIdentityPage() {
         to="/dashboard"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> กลับไปหน้า Dashboard
+        <ArrowLeft className="h-4 w-4" /> {t("verifyIdentity.backToDashboard")}
       </Link>
 
       <motion.div
@@ -150,9 +155,9 @@ function VerifyIdentityPage() {
             <ShieldCheck className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold">ยืนยันตัวตน</h1>
+            <h1 className="text-2xl font-bold">{t("verifyIdentity.headerTitle")}</h1>
             <p className="text-sm text-muted-foreground">
-              สแกนบัตรประชาชนเพื่อรับ Verified Badge
+              {t("verifyIdentity.headerSubtitle")}
             </p>
           </div>
         </div>
@@ -161,19 +166,19 @@ function VerifyIdentityPage() {
         <div className="mt-8 flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <StepDot
             n={1}
-            label="อัปโหลดบัตร"
+            label={t("verifyIdentity.stepUpload")}
             active={scanState === "idle"}
             done={scanState !== "idle"}
           />
           <div className="h-px flex-1 bg-border" />
           <StepDot
             n={2}
-            label="ตรวจสอบข้อมูล"
+            label={t("verifyIdentity.stepVerify")}
             active={scanState === "done"}
             done={confirming}
           />
           <div className="h-px flex-1 bg-border" />
-          <StepDot n={3} label="ยืนยัน" active={false} done={false} />
+          <StepDot n={3} label={t("verifyIdentity.stepConfirm")} active={false} done={false} />
         </div>
 
         {/* Card area */}
@@ -192,16 +197,44 @@ function VerifyIdentityPage() {
                   <Camera className="h-8 w-8 text-primary/60" />
                 </div>
                 <p className="mt-4 text-sm font-medium">
-                  ถ่ายรูปหรือเลือกรูปบัตรประชาชน
+                  {t("verifyIdentity.uploadPromptTitle")}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  รองรับ JPG, PNG — ข้อมูลไม่ถูกเก็บในระบบ
+                  {t("verifyIdentity.uploadPromptFormats")}
                 </p>
+
+                {/* PDPA Consent Box */}
+                <div className="mt-6 w-full max-w-md rounded-xl border border-border bg-muted/30 p-4 text-left">
+                  <div className="flex items-center gap-2 text-xm font-semibold text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    <span>{t("verifyIdentity.consentTitle")}</span>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+                    {t("verifyIdentity.consentDesc")}
+                  </p>
+
+                  <div className="mt-4 flex items-start gap-2.5 border-t border-border/60 pt-3">
+                    <Checkbox
+                      id="pdpa-consent"
+                      checked={consentAccepted}
+                      onCheckedChange={(checked) => setConsentAccepted(!!checked)}
+                      className="mt-0.5"
+                    />
+                    <Label
+                      htmlFor="pdpa-consent"
+                      className="cursor-pointer text-xs font-normal leading-relaxed text-muted-foreground select-none hover:text-foreground transition-colors"
+                    >
+                      {t("verifyIdentity.consentCheckbox")}
+                    </Label>
+                  </div>
+                </div>
+
                 <Button
                   className="mt-6 gap-2"
                   onClick={() => fileRef.current?.click()}
+                  disabled={!consentAccepted}
                 >
-                  <Upload className="h-4 w-4" /> เลือกรูปภาพ
+                  <Upload className="h-4 w-4" /> {t("verifyIdentity.btnChooseImage")}
                 </Button>
                 <input
                   ref={fileRef}
@@ -231,9 +264,9 @@ function VerifyIdentityPage() {
                   />
                 )}
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="mt-3 text-sm font-medium">กำลังสแกน...</p>
+                <p className="mt-3 text-sm font-medium">{t("verifyIdentity.scanningTitle")}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  กรุณารอสักครู่ ระบบกำลังอ่านข้อมูลจากบัตร
+                  {t("verifyIdentity.scanningDesc")}
                 </p>
               </motion.div>
             )}
@@ -255,15 +288,14 @@ function VerifyIdentityPage() {
                 )}
 
                 <div className="space-y-3 rounded-xl bg-muted/40 p-4">
-                  <DataRow label="เลขบัตรประชาชน" value={parsed.idNumber} />
-                  <DataRow label="ชื่อ-นามสกุล (ภาษาไทย)" value={parsed.fullNameTh} />
-                  <DataRow label="Name (English)" value={parsed.fullNameEn} />
-                  <DataRow label="วันหมดอายุ" value={parsed.expiry} />
+                  <DataRow label={t("verifyIdentity.dataLabelId")} value={parsed.idNumber} />
+                  <DataRow label={t("verifyIdentity.dataLabelNameTh")} value={parsed.fullNameTh} />
+                  <DataRow label={t("verifyIdentity.dataLabelNameEn")} value={parsed.fullNameEn} />
+                  <DataRow label={t("verifyIdentity.dataLabelExpiry")} value={parsed.expiry} />
                 </div>
 
                 <p className="mt-4 text-xs text-muted-foreground">
-                  ⚠️ ข้อมูลจากบัตร{" "}
-                  <strong>ไม่ถูกเก็บในระบบ</strong> — ใช้เพื่อยืนยันเท่านั้น
+                  ⚠️ {t("verifyIdentity.doneWarning")}
                 </p>
 
                 <div className="mt-6 flex gap-3">
@@ -273,7 +305,7 @@ function VerifyIdentityPage() {
                     onClick={reset}
                     disabled={confirming}
                   >
-                    <RefreshCw className="h-4 w-4" /> สแกนใหม่
+                    <RefreshCw className="h-4 w-4" /> {t("verifyIdentity.btnScanAgain")}
                   </Button>
                   <Button
                     className="flex-1 gap-2"
@@ -283,12 +315,11 @@ function VerifyIdentityPage() {
                     {confirming ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />{" "}
-                        กำลังยืนยัน...
+                        {t("verifyIdentity.btnVerifying")}
                       </>
                     ) : (
                       <>
-                        <BadgeCheck className="h-4 w-4" /> ข้อมูลถูกต้อง
-                        ยืนยันตัวตน
+                        <BadgeCheck className="h-4 w-4" /> {t("verifyIdentity.btnConfirm")}
                       </>
                     )}
                   </Button>
@@ -314,13 +345,13 @@ function VerifyIdentityPage() {
                 )}
                 <AlertTriangle className="h-8 w-8 text-amber-500" />
                 <p className="mt-3 text-sm font-medium">
-                  สแกนไม่ชัด — ไม่พบเลขบัตรประชาชน
+                  {t("verifyIdentity.errorTitle")}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  กรุณาถ่ายรูปให้ชัดขึ้น หรือใช้รูปที่มีแสงสว่างเพียงพอ
+                  {t("verifyIdentity.errorDesc")}
                 </p>
                 <Button className="mt-6 gap-2" onClick={reset}>
-                  <RefreshCw className="h-4 w-4" /> ลองใหม่อีกครั้ง
+                  <RefreshCw className="h-4 w-4" /> {t("verifyIdentity.btnTryAgain")}
                 </Button>
               </motion.div>
             )}
@@ -329,12 +360,12 @@ function VerifyIdentityPage() {
 
         {/* Manual fallback link */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          สแกนไม่สำเร็จ?{" "}
+          {t("verifyIdentity.fallbackText")}{" "}
           <Link
             to="/account"
             className="text-primary underline underline-offset-2 hover:text-primary/80"
           >
-            กรอกข้อมูลด้วยตนเอง
+            {t("verifyIdentity.fallbackLink")}
           </Link>
         </p>
       </motion.div>
@@ -357,10 +388,10 @@ function StepDot({
     <div className="flex items-center gap-1.5">
       <div
         className={`flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold transition-colors ${done
-            ? "bg-success text-success-foreground"
-            : active
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-muted-foreground"
+          ? "bg-success text-success-foreground"
+          : active
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
           }`}
       >
         {done ? <CheckCircle2 className="h-3.5 w-3.5" /> : n}
