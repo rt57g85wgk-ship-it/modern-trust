@@ -1,0 +1,55 @@
+# Modern Trust — Project Requirements
+# This is a JavaScript/TypeScript project (not Python).
+# Node/Bun dependencies are managed via package.json + bun.lock.
+# This file documents external service and system requirements.
+
+# ─── Runtime ──────────────────────────────────────────────────────────────────
+bun >= 1.0.0               # Recommended package manager and runtime
+# OR
+node >= 20.0.0             # Minimum Node.js version (if not using Bun)
+
+# ─── Package Manager ──────────────────────────────────────────────────────────
+# Install via: curl -fsSL https://bun.sh/install | bash
+bun                        # Preferred (faster installs)
+# OR npm / pnpm / yarn compatible with Node 20+
+
+# ─── External Services (Required) ─────────────────────────────────────────────
+supabase                   # PostgreSQL database, authentication, and file storage
+                           # → Create a free project at https://supabase.com
+                           # → Needed env vars: VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+google-oauth               # "Sign in with Google" authentication
+                           # → Create OAuth 2.0 credentials at https://console.cloud.google.com
+                           # → Needed env var: VITE_GOOGLE_CLIENT_ID
+
+# ─── External Services (Optional — for VoiceBot notifications) ────────────────
+resend                     # Transactional email for inbound VoiceBot lead alerts
+                           # → Sign up at https://resend.com
+                           # → Needed env var: RESEND_API_KEY
+
+line-messaging-api         # LINE push notifications for inbound VoiceBot leads
+                           # → Create a Messaging API channel at https://developers.line.biz
+                           # → Needed env var: LINE_CHANNEL_ACCESS_TOKEN
+
+# ─── Deployment (Production) ──────────────────────────────────────────────────
+cloudflare-workers         # Serverless edge deployment platform
+                           # → Create a free account at https://cloudflare.com
+                           # → Requires Wrangler CLI: bun add -g wrangler
+
+# ─── Developer Tools (Optional) ───────────────────────────────────────────────
+wrangler >= 3.0.0          # Cloudflare Workers CLI for local dev and deployment
+                           # → Install: bun add -g wrangler
+
+git >= 2.0.0               # Version control
+
+# ─── Supabase Database Tables Required ────────────────────────────────────────
+# Run these SQL migration files (in order) from the project root in Supabase SQL Editor:
+#   1. create_tenant_requirements.sql
+#   2. create_voice_leads.sql
+#   3. add_promoted_column.sql
+#   4. add_landlord_contact_columns.sql
+#   5. add_notification_preferences.sql
+#   6. add_phone_contact_enabled.sql
+#   7. add_virtual_phone_to_users.sql
+#
+# Also create a Supabase Storage bucket named: room-images (public read access)

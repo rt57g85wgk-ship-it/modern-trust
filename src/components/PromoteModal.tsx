@@ -12,6 +12,36 @@ const PACKAGE_DEFS = [
 
 export type PromotePackage = (typeof PACKAGE_DEFS)[number];
 
+const PACKAGE_STYLES = {
+  7: {
+    active: "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40 dark:bg-blue-500/10 dark:border-blue-400 shadow-[0_0_12px_rgba(37,99,235,0.15)]",
+    hover: "hover:border-blue-500/40 hover:bg-blue-500/5 dark:hover:border-blue-500/30 hover:-translate-y-1 hover:shadow-md",
+    badgeActive: "bg-blue-600 text-white",
+    badgeInactive: "bg-cyan-50/80 text-cyan-600 dark:bg-cyan-950/40 dark:text-cyan-300",
+    checkmark: "text-blue-500"
+  },
+  14: {
+    active: "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40 dark:bg-blue-500/10 dark:border-blue-400 shadow-[0_0_12px_rgba(37,99,235,0.15)]",
+    hover: "hover:border-blue-500/40 hover:bg-blue-500/5 dark:hover:border-blue-500/30 hover:-translate-y-1 hover:shadow-md",
+    badgeActive: "bg-blue-600 text-white",
+    badgeInactive: "bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300",
+    checkmark: "text-blue-500"
+  },
+  30: {
+    active: "border-blue-500 bg-blue-500/5 ring-1 ring-blue-500/40 dark:bg-blue-500/10 dark:border-blue-400 shadow-[0_0_12px_rgba(37,99,235,0.15)]",
+    hover: "hover:border-blue-500/40 hover:bg-blue-500/5 dark:hover:border-blue-500/30 hover:-translate-y-1 hover:shadow-md",
+    badgeActive: "bg-blue-600 text-white",
+    badgeInactive: "bg-amber-50/80 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300",
+    checkmark: "text-blue-500"
+  }
+} as const;
+
+const BUTTON_STYLES = {
+  7: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]",
+  14: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]",
+  30: "bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white shadow-[0_4px_12px_rgba(37,99,235,0.2)]"
+} as const;
+
 const fmtTHB = (n: number) => `฿${Math.round(n).toLocaleString("en-US")}`;
 
 type PricedPackage = PromotePackage & {
@@ -108,9 +138,10 @@ export function PromoteModal({ open, onClose, monthlyRent, listingTitle, onConfi
               </p>
             </div>
 
-            <div className="grid gap-3 p-6 sm:grid-cols-3">
+            <div className="grid gap-4 p-6 sm:grid-cols-3">
               {priced.map((p) => {
                 const active = p.days === selected;
+                const style = PACKAGE_STYLES[p.days];
                 return (
                   <button
                     key={p.days}
@@ -119,12 +150,14 @@ export function PromoteModal({ open, onClose, monthlyRent, listingTitle, onConfi
                     aria-pressed={active}
                     className={`relative rounded-2xl border p-4 text-left transition-all ${
                       active
-                        ? "border-primary bg-primary/5 shadow-glow ring-1 ring-primary/40"
-                        : "border-border bg-background hover:border-primary/40 hover:bg-muted/40"
+                        ? `${style.active} shadow-glow`
+                        : `border-border bg-background ${style.hover}`
                     }`}
                   >
                     {p.badge.trim() !== "" && (
-                      <span className="absolute -top-2 right-3 rounded-full bg-primary px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow">
+                      <span className={`absolute -top-2 right-3 rounded-full px-2 py-0.5 text-[10px] font-semibold shadow transition-all duration-300 ${
+                        active ? style.badgeActive : style.badgeInactive
+                      }`}>
                         {p.badge}
                       </span>
                     )}
@@ -132,7 +165,7 @@ export function PromoteModal({ open, onClose, monthlyRent, listingTitle, onConfi
                       <span className="text-sm font-medium text-muted-foreground">
                         {t("promote.daysUnit", { count: p.days })}
                       </span>
-                      {active && <Check className="h-4 w-4 text-primary" />}
+                      {active && <Check className={`h-4 w-4 ${style.checkmark}`} />}
                     </div>
                     <div className="mt-2 text-2xl font-bold tracking-tight">{fmtTHB(p.price)}</div>
                     <div className="mt-0.5 text-[11px] text-muted-foreground">
@@ -167,7 +200,10 @@ export function PromoteModal({ open, onClose, monthlyRent, listingTitle, onConfi
                 <Button variant="outline" onClick={onClose}>
                   {t("common.cancel")}
                 </Button>
-                <Button onClick={() => onConfirm(current, current.price)} className="gap-2">
+                <Button 
+                  onClick={() => onConfirm(current, current.price)} 
+                  className={`gap-2 transition-all duration-300 ${BUTTON_STYLES[current.days]}`}
+                >
                   <Sparkles className="h-4 w-4" /> {t("promote.activate")}
                 </Button>
               </div>

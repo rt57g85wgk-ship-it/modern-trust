@@ -22,7 +22,6 @@ import {
   Upload,
   BadgeCheck,
   Loader2,
-  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -303,7 +302,7 @@ function RenterView({
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2">
+        <section className="rounded-2xl border border-border bg-card p-6 lg:col-span-2 flex flex-col">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
 
@@ -385,27 +384,32 @@ function RenterView({
 function VerificationPanel({ verified }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
   return (
-    <div>
-      <div className="flex items-center gap-2">
-        <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
-        <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
-        {verified && (
-          <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
-            <Check className="h-3 w-3" /> {t("dashboard.verified")}
-          </span>
-        )}
+    <div className="grow flex flex-col justify-between">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <BadgeCheck className={`h-5 w-5 ${verified ? "text-success" : "text-primary"}`} />
+          <h2 className="font-semibold">{t("dashboard.idVerification")}</h2>
+          {verified && (
+            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-0.5 text-[11px] font-medium text-success">
+              <Check className="h-3 w-3" /> {t("dashboard.verified")}
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
+        </p>
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        {verified ? t("dashboard.verifyDoneDesc") : t("dashboard.verifyDesc")}
-      </p>
+
+
+
       {!verified && (
-        <Link to="/account">
-          <Button className="mt-4 gap-2">
-            <Upload className="h-4 w-4" /> Complete Verification
+        <Link to="/verify-identity" className="flex justify-center">
+          <Button className="mt-4 gap-2 grow">
+            <Upload className="h-4 w-4" /> {t("dashboard.completeVerification")}
           </Button>
         </Link>
       )}
-    </div>
+    </div >
   );
 }
 
@@ -467,13 +471,11 @@ const seedUnits: Unit[] = [];
 
 function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
-  const { user, updateProfile } = useApp();
   const [units, setUnits] = useState<Unit[]>(seedUnits);
   const [editing, setEditing] = useState<Unit | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSubscribing, setIsSubscribing] = useState(false);
 
   const requireOwnerId = async (): Promise<string> => {
     const {
@@ -521,8 +523,8 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
       if (rErr) throw rErr;
 
       const mappedUnits = (rooms || []).map((room: any) => {
-        const building = Array.isArray(room.buildings) 
-          ? room.buildings[0] 
+        const building = Array.isArray(room.buildings)
+          ? room.buildings[0]
           : room.buildings;
         return mapDbRoomToUnit(room, building);
       });
@@ -546,7 +548,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
       const isExisting = exists(units, u.id);
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(u.id);
       const owner_id = await requireOwnerId();
-      
+
       if (isExisting && isUuid) {
         // Upload new images to Supabase Storage if any
         const uploadedUrls: string[] = [];
@@ -722,7 +724,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               .from("buildings")
               .delete()
               .eq("building_id", roomData.building_id);
-            
+
             if (bErr) {
               console.warn("Failed to delete associated building (might have other rooms):", bErr);
             }
@@ -742,7 +744,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               const { error: storageErr } = await supabase.storage
                 .from("room-images")
                 .remove(filePaths);
-              
+
               if (storageErr) {
                 console.error("Failed to delete images from storage:", storageErr);
               } else {
@@ -887,7 +889,7 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
                   onValueChange={async (v) => {
                     const isAvailable = v === "available";
                     const statusText = isAvailable ? "AVAILABLE" : "OCCUPIED";
-                    
+
                     setUnits((arr) =>
                       arr.map((x) => (x.id === u.id ? { ...x, available: isAvailable } : x)),
                     );
@@ -943,99 +945,24 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         </div>
       </section>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 ">
         <section className="rounded-2xl border border-border bg-card p-6">
-          <VerificationPanel verified={verified} onVerify={onVerify} />
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">{t("dashboard.aiTips")}</h2>
+          </div>
+          <ul className="mt-4 space-y-3 text-sm">
+            {aiTips.map((tip) => (
+              <li key={tip} className="flex gap-2 rounded-lg bg-muted/40 p-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {tip}
+              </li>
+            ))}
+          </ul>
         </section>
 
-        {user && (
-          <section className={cn(
-            "rounded-2xl border p-6 flex flex-col justify-between transition-all bg-card",
-            user.phoneContactEnabled ? "border-success bg-success/[0.02]" : "border-border"
-          )}>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Phone className={cn("h-5 w-5", user.phoneContactEnabled ? "text-success" : "text-primary")} />
-                  <h2 className="font-semibold text-base">Direct Call</h2>
-                </div>
-                {user.phoneContactEnabled ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium text-success">
-                    Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
-                    Premium
-                  </span>
-                )}
-              </div>
-              
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {user.phoneContactEnabled 
-                  ? "เปิดใช้งานปุ่มโทรตรงแล้ว ผู้เช่าสามารถโทรหาคุณโดยตรงผ่านปุ่มบนหน้าประกาศของคุณ"
-                  : "แสดงปุ่มโทรศัพท์มือถือบนหน้าประกาศของคุณเพื่อเพิ่มโอกาสในการปล่อยเช่าได้เร็วขึ้น"}
-              </p>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-border/50">
-              {user.phoneContactEnabled ? (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-success text-success hover:bg-success/10 hover:text-success font-semibold"
-                  disabled={isSubscribing}
-                  onClick={async () => {
-                    setIsSubscribing(true);
-                    setTimeout(async () => {
-                      try {
-                        await updateProfile({ phoneContactEnabled: false });
-                        toast.success("ปิดใช้งานฟีเจอร์เบอร์โทรติดต่อตรงแล้ว");
-                      } catch (err) {
-                        toast.error("ปิดใช้งานล้มเหลว");
-                      } finally {
-                        setIsSubscribing(false);
-                      }
-                    }, 1000);
-                  }}
-                >
-                  {isSubscribing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> กำลังดำเนินการ...
-                    </>
-                  ) : (
-                    <>ปิดใช้งาน (Deactivate)</>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  className="w-full gap-2 bg-primary hover:bg-primary/95 text-primary-foreground font-semibold py-5"
-                  disabled={isSubscribing}
-                  onClick={async () => {
-                    setIsSubscribing(true);
-                    toast.info("กำลังดำเนินการชำระเงินจำลอง...");
-                    setTimeout(async () => {
-                      try {
-                        await updateProfile({ phoneContactEnabled: true });
-                        toast.success("สมัครบริการ Direct Call เรียบร้อยแล้ว! (จำลองการตัดเงิน ฿199/เดือน)");
-                      } catch (err) {
-                        toast.error("การสมัครบริการล้มเหลว");
-                      } finally {
-                        setIsSubscribing(false);
-                      }
-                    }, 1500);
-                  }}
-                >
-                  {isSubscribing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> เปิดใช้งาน...
-                    </>
-                  ) : (
-                    <>เปิดใช้งาน (฿199/เดือน)</>
-                  )}
-                </Button>
-              )}
-            </div>
-          </section>
-        )}
+        <section className="rounded-2xl border border-border bg-card p-6 flex flex-col">
+          <VerificationPanel verified={verified} onVerify={onVerify} />
+        </section>
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-semibold">{t("dashboard.profile")}</h2>
@@ -1068,22 +995,6 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               </Button>
             </Link>
           </div>
-        </section>
-      </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-1">
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">{t("dashboard.aiTips")}</h2>
-          </div>
-          <ul className="mt-4 space-y-3 text-sm">
-            {aiTips.map((tip) => (
-              <li key={tip} className="flex gap-2 rounded-lg bg-muted/40 p-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {tip}
-              </li>
-            ))}
-          </ul>
         </section>
       </div>
 
@@ -1177,7 +1088,7 @@ function ListingFormDialog({
 
   const addImageUrls = (files: FileList | File[] | null) => {
     if (!files || !files.length) return;
-    
+
     const fileArray = Array.from(files as File[]);
     const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -1194,7 +1105,7 @@ function ListingFormDialog({
     setForm((prev) => {
       const currentImages = prev.images.filter(src => src !== defaultThumb);
       const remainingSlots = 5 - currentImages.length;
-      
+
       if (remainingSlots <= 0) {
         toast.error("อัปโหลดได้สูงสุด 5 รูปเท่านั้น");
         return prev;
@@ -1208,12 +1119,12 @@ function ListingFormDialog({
       const urls = filesToAdd.map((f) => URL.createObjectURL(f));
       const newImages = [...currentImages, ...urls];
       const newImageFiles = [...(prev.imageFiles || []), ...filesToAdd];
-      
-      return { 
-        ...prev, 
-        images: newImages, 
-        imageFiles: newImageFiles, 
-        image: newImages[0] ?? prev.image 
+
+      return {
+        ...prev,
+        images: newImages,
+        imageFiles: newImageFiles,
+        image: newImages[0] ?? prev.image
       };
     });
   };
@@ -1223,10 +1134,10 @@ function ListingFormDialog({
       const currentImages = prev.images.filter(src => src !== defaultThumb);
       const target = currentImages[idx];
       if (target?.startsWith("blob:")) URL.revokeObjectURL(target);
-      
+
       const nextImages = currentImages.filter((_, i) => i !== idx);
       const nextFiles = prev.imageFiles ? prev.imageFiles.filter((_, i) => i !== idx) : [];
-      
+
       const finalImages = nextImages;
       return { ...prev, images: finalImages, imageFiles: nextFiles, image: finalImages[0] || "" };
     });
@@ -1805,13 +1716,14 @@ function PromoteToggle({
       <button
         onClick={() => (promoted ? onUnpromote() : setOpen(true))}
         className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${promoted
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-muted-foreground hover:bg-muted/70"
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-muted/70"
           }`}
       >
         <Sparkles className="h-3 w-3" />{" "}
         {promoted ? t("dashboard.promoted") : t("dashboard.promote")}
       </button>
+
       <PromoteModal
         open={open}
         onClose={() => setOpen(false)}
