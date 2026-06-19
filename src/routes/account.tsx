@@ -478,7 +478,7 @@ function SettingsTab({
   const { toggleLang } = useApp();
   const [phone, setPhone] = useState(u.phone ?? "");
   const [lineId, setLineId] = useState(u.lineId ?? "");
-  const [currentLang, setCurrentLang] = useState(u.language || "en");
+  const [currentLang, setCurrentLang] = useState<string>(u.language || "en");
   const [lineQrUrl, setLineQrUrl] = useState(u.lineQrUrl ?? "");
   const [lineQrFile, setLineQrFile] = useState<File | null>(null);
   const [notifyEmail, setNotifyEmail] = useState(u.notifyEmail ?? true);
