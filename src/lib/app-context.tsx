@@ -33,7 +33,7 @@ export type UserProfile = {
   moveInTimeline?: string;
   lifestyleTags?: string[];
   // Settings
-  language?: string;
+  language?: "en" | "th";
   notifyEmail?: boolean;
   notifyPush?: boolean;
   notifySms?: boolean;
