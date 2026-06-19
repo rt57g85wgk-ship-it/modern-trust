@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
+  Bot,
   Building2,
   Calendar,
   Check,
@@ -14,7 +15,6 @@ import {
   Maximize,
   MessageCircle,
   PawPrint,
-  Phone,
   ShieldCheck,
   Star,
   WalletCards,
@@ -65,6 +65,8 @@ function PropertyPage() {
   const [active, setActive] = useState(0);
   const [date, setDate] = useState("");
   const [contactOpen, setContactOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isDetailsExpanded, setIsDetailsExpanded] = useState(false);
 
   useEffect(() => {
     if (!listing?.id) return;
@@ -247,24 +249,25 @@ function PropertyPage() {
             </div>
           </Link>
 
-          <div className="grid gap-4 py-6 sm:grid-cols-3">
-            {[
-              { icon: Building2, label: propertyType, caption: t("property.propertyType") },
-              { icon: HomeIcon, label: listing.roomType, caption: t("property.roomType") },
-              { icon: Maximize, label: sqLabel, caption: t("property.roomSize") },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl border border-border bg-card p-4">
-                <s.icon className="h-5 w-5 text-primary" />
-                <p className="mt-2 text-sm font-medium">{s.label}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{s.caption}</p>
-              </div>
-            ))}
-          </div>
-
           <section className="border-t border-border py-6">
             <h2 className="text-lg font-semibold">{t("property.listingDetails")}</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 grid gap-x-8 gap-y-6 grid-cols-1 sm:grid-cols-2">
               {[
+                {
+                  icon: Building2,
+                  label: propertyType,
+                  caption: t("property.propertyType"),
+                },
+                {
+                  icon: HomeIcon,
+                  label: listing.roomType,
+                  caption: t("property.roomType"),
+                },
+                {
+                  icon: Maximize,
+                  label: sqLabel,
+                  caption: t("property.roomSize"),
+                },
                 {
                   icon: Check,
                   label: listing.available
@@ -277,30 +280,76 @@ function PropertyPage() {
                   label: petFriendly ? t("property.petFriendlyYes") : t("property.petFriendlyNo"),
                   caption: t("property.petFriendly"),
                 },
-                { icon: FileText, label: minimumLease, caption: t("property.minimumLease") },
+                {
+                  icon: FileText,
+                  label: minimumLease,
+                  caption: t("property.minimumLease"),
+                },
                 {
                   icon: WalletCards,
                   label: t("property.depositMonths", { count: depositMonths }),
                   caption: t("property.deposit"),
                 },
-                { icon: Zap, label: utilityRates, caption: t("property.utilityRates") },
-              ].map((item) => (
-                <div key={item.caption} className="rounded-xl border border-border bg-card p-4">
-                  <item.icon className="h-4 w-4 text-primary" />
-                  <p className="mt-2 text-sm font-medium">{item.label}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{item.caption}</p>
-                </div>
-              ))}
+                {
+                  icon: Zap,
+                  label: utilityRates,
+                  caption: t("property.utilityRates"),
+                },
+              ].map((item, index) => {
+                let displayClass = "flex";
+                if (!isDetailsExpanded) {
+                  if (index === 3) {
+                    displayClass = "hidden sm:flex";
+                  } else if (index >= 4) {
+                    displayClass = "hidden";
+                  }
+                }
+                return (
+                  <div
+                    key={item.caption}
+                    className={`items-start gap-4 ${displayClass}`}
+                  >
+                    <item.icon className="h-6 w-6 text-foreground/75 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                      <p className="text-sm text-muted-foreground mt-0.5">{item.caption}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() => setIsDetailsExpanded(!isDetailsExpanded)}
+                className="text-sm font-semibold text-primary hover:underline focus:outline-none cursor-pointer"
+              >
+                {isDetailsExpanded ? t("property.showLess") : t("property.showMore")}
+              </button>
             </div>
           </section>
 
           <section className="border-t border-border py-6">
             <h2 className="text-lg font-semibold">{t("property.about")}</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              {listing.description}
-            </p>
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2 py-1 text-xs font-medium text-primary">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary" /> {t("property.aiDescBadge")}
+            <div className="mt-3 text-sm leading-relaxed text-muted-foreground">
+              {listing.description.length > 250 ? (
+                <>
+                  <p>
+                    {isExpanded
+                      ? listing.description
+                      : `${listing.description.slice(0, 250)}...`}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="mt-2 text-sm font-semibold text-primary hover:underline focus:outline-none cursor-pointer"
+                  >
+                    {isExpanded ? t("property.showLess") : t("property.showMore")}
+                  </button>
+                </>
+              ) : (
+                <p>{listing.description}</p>
+              )}
             </div>
           </section>
 
@@ -389,40 +438,59 @@ function PropertyPage() {
                   }}
                   style={{ backgroundColor: "#06C755", color: "white" }}
                 >
-                  <MessageCircle className="h-5 w-5" />
-                  Contact Line
+                  <LineIcon className="h-5 w-5 fill-current" />
+                  Contact LINE
                 </Button>
-                <a
-                  href={`tel:${listing.landlord.phone || "081-234-5678"}`}
-                  className="w-full"
+
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-[#00AEFF] hover:bg-[#009BE5] text-white"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const phone = listing.landlord.phone || "081-234-5678";
+                    window.location.href = `tel:${phone}`;
+                  }}
                 >
-                  <Button
-                    className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-primary hover:bg-primary/95 text-primary-foreground"
-                    size="lg"
-                    disabled={!listing.available}
-                  >
-                    <Phone className="h-5 w-5" />
-                    Call Landlord
-                  </Button>
-                </a>
+                  <Bot className="h-5 w-5 shrink-0" />
+                  Call Botnoi AI
+                </Button>
               </div>
             ) : (
-              <Button
-                className="mt-5 w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
-                size="lg"
-                disabled={!listing.available}
-                onClick={() => {
-                  if (!user) {
-                    void navigate({ to: "/login" });
-                    return;
-                  }
-                  setContactOpen(true);
-                }}
-                style={{ backgroundColor: "#06C755", color: "white" }}
-              >
-                <MessageCircle className="h-6 w-6" />
-                Contact Landlord
-              </Button>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={() => {
+                    if (!user) {
+                      void navigate({ to: "/login" });
+                      return;
+                    }
+                    setContactOpen(true);
+                  }}
+                  style={{ backgroundColor: "#06C755", color: "white" }}
+                >
+                  <MessageCircle className="h-6 w-6" />
+                  Contact Landlord
+                </Button>
+
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-[#00AEFF] hover:bg-[#009BE5] text-white"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const phone = listing.landlord.phone || "081-234-5678";
+                    window.location.href = `tel:${phone}`;
+                  }}
+                >
+                  <Bot className="h-5 w-5 shrink-0" />
+                  Call Botnoi AI
+                </Button>
+              </div>
             )}
             <p className="mt-3 text-center text-xs text-muted-foreground">
               {t("property.bookingNote")}
@@ -487,7 +555,7 @@ function PropertyPage() {
               }}
               style={{ backgroundColor: "#06C755", color: "white" }}
             >
-              <MessageCircle className="h-5 w-5" />
+              <LineIcon className="h-5 w-5 fill-current" />
               Open Line
             </Button>
           </DialogFooter>
@@ -570,5 +638,19 @@ function AmenityGroup({
         </div>
       )}
     </div>
+  );
+}
+
+function LineIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      role="img"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      {...props}
+    >
+      <title>LINE</title>
+      <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314" />
+    </svg>
   );
 }

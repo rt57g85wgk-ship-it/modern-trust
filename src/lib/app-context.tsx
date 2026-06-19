@@ -106,8 +106,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         const sbUser = session.user;
         const metadata = sbUser.user_metadata || {};
-        console.log("Session user metadata:", metadata);
-        
+        // console.log("Session user metadata:", metadata);
+
         let profile: UserProfile = {
           id: sbUser.id,
           name: metadata.full_name || sbUser.email?.split("@")[0] || "User",
@@ -132,14 +132,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         // On USER_UPDATED, skip database select to prevent deadlocks/race conditions.
         if (event !== "USER_UPDATED") {
           try {
-            console.log("Querying 'users' table for user_id:", sbUser.id);
+            // console.log("Querying 'users' table for user_id:", sbUser.id);
             const { data: dbUser, error: dbError } = await supabase
               .from("users")
               .select("*")
               .eq("user_id", sbUser.id)
               .maybeSingle();
 
-            console.log("Database query result - User row:", dbUser, "Error:", dbError);
+            // console.log("Database query result - User row:", dbUser, "Error:", dbError);
 
             if (dbUser) {
               profile = {
@@ -161,7 +161,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 moveInTimeline: metadata.moveInTimeline || "",
                 lifestyleTags: metadata.lifestyleTags || [],
               };
-              console.log("Profile resolved from DB data:", profile);
+              // console.log("Profile resolved from DB data:", profile);
             } else if (!dbError) {
               // No user row exists, let's create one
               const newDbUser = {
@@ -322,7 +322,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       console.log("Persist called with next user state:", next);
       console.log("Active Supabase session found:", !!session, session?.user?.id);
-      
+
       if (session) {
         const metadataPatch = {
           full_name: next.name,
@@ -370,7 +370,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .from("users")
           .update(dbPatch)
           .eq("user_id", session.user.id);
-        
+
         if (dbError && (dbError.code === "PGRST204" || dbError.message?.includes("phone_contact_enabled"))) {
           console.warn("Retrying database update without 'phone_contact_enabled' due to missing column...");
           const fallbackPatch = { ...dbPatch };
@@ -381,7 +381,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             .eq("user_id", session.user.id);
           dbError = retryResult.error;
         }
-        
+
         if (dbError) {
           console.error("Error updating Supabase 'users' table:", dbError);
           throw new Error(`Database Error: ${dbError.message}`);
@@ -499,7 +499,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("user_id", userObj.id)
           .maybeSingle();
-        
+
         if (dbUser) {
           const metadata = userObj.user_metadata || {};
           const profile: UserProfile = {

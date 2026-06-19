@@ -48,6 +48,14 @@ const LIFESTYLE_TAGS = [
   "Family",
 ];
 
+const LANGUAGES = [
+  { code: "th", label: "ไทย" },
+  { code: "en", label: "English" },
+  { code: "jp", label: "日本語" },
+  { code: "kr", label: "한국어" },
+  { code: "cn", label: "中文" },
+];
+
 function AccountPage() {
   const { user, updateProfile, verifyIdentity, authLoading } = useApp();
   const nav = useNavigate();
@@ -470,6 +478,7 @@ function SettingsTab({
   const { toggleLang } = useApp();
   const [phone, setPhone] = useState(u.phone ?? "");
   const [lineId, setLineId] = useState(u.lineId ?? "");
+  const [currentLang, setCurrentLang] = useState(u.language || "en");
   const [lineQrUrl, setLineQrUrl] = useState(u.lineQrUrl ?? "");
   const [lineQrFile, setLineQrFile] = useState<File | null>(null);
   const [notifyEmail, setNotifyEmail] = useState(u.notifyEmail ?? true);
@@ -477,7 +486,6 @@ function SettingsTab({
   const [notifySms, setNotifySms] = useState(u.notifySms ?? false);
   const [isSaving, setIsSaving] = useState(false);
   const [phoneContactEnabled, setPhoneContactEnabled] = useState(u.phoneContactEnabled ?? false);
-  const [isSubscribing, setIsSubscribing] = useState(false);
 
   const qrInputRef = useRef<HTMLInputElement>(null);
 
@@ -490,6 +498,7 @@ function SettingsTab({
     setNotifyEmail(u.notifyEmail ?? true);
     setNotifyPush(u.notifyPush ?? true);
     setNotifySms(u.notifySms ?? false);
+    setCurrentLang(u.language || "en");
   }, [user]);
 
   const save = async () => {
@@ -542,6 +551,7 @@ function SettingsTab({
         notifyEmail,
         notifyPush,
         notifySms,
+        language: currentLang,
       });
       setLineQrFile(null);
       toast.success("Settings saved");
@@ -581,10 +591,26 @@ function SettingsTab({
             </Field>
           )}
           <Field label="Language">
-            <Button variant="outline" className="w-full justify-start gap-2" onClick={toggleLang} disabled={isSaving}>
-              <Globe className="h-4 w-4" /> Switch language
-            </Button>
-          </Field>
+  <div className="relative">
+    <select
+      value={currentLang}
+      disabled={isSaving}
+      onChange={(e) => setCurrentLang(e.target.value)}
+      className="h-10 w-full rounded-md border border-input bg-background px-3 pr-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+    >
+      <option value="th">ไทย</option>
+      <option value="en">English</option>
+      <option value="jp">日本語</option>
+      <option value="kr">한국어</option>
+      <option value="cn">中文</option>
+    </select>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+      <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+      </svg>
+    </div>
+  </div>
+</Field>
 
           {u.role === "landlord" && (
             <div className="sm:col-span-2 space-y-2 pt-2 border-t border-border/50">
@@ -650,118 +676,6 @@ function SettingsTab({
           )}
         </div>
       </section>
-
-      {u.role === "landlord" && (
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-2">
-            <Phone className="h-5 w-5 text-primary" />
-            <h2 className="font-semibold">Direct Call Feature (เบอร์โทรติดต่อตรง)</h2>
-            {phoneContactEnabled ? (
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
-                Active
-              </span>
-            ) : (
-              <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                Premium
-              </span>
-            )}
-          </div>
-          
-          <p className="mt-2 text-sm text-muted-foreground">
-            {phoneContactEnabled 
-              ? "เปิดใช้งานปุ่ม 'Call Landlord' บนหน้าประกาศของคุณแล้ว ผู้เช่าสามารถกดโทรติดต่อคุณได้โดยตรง"
-              : "เปิดโอกาสให้ผู้เช่าติดต่อคุณได้รวดเร็วยิ่งขึ้นโดยแสดงปุ่มโทรศัพท์มือถือบนหน้าประกาศห้องเช่า (ค่าบริการ ฿199/เดือน)"}
-          </p>
-
-          <div className="mt-6 border-t border-border/50 pt-6">
-            {phoneContactEnabled ? (
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label className="text-sm font-medium">แสดงปุ่มโทรติดต่อตรงบนประกาศ</Label>
-                    <p className="text-xs text-muted-foreground">
-                      เปิดเพื่อแสดงปุ่ม Call Landlord บนหน้าประกาศห้องพัก
-                    </p>
-                  </div>
-                  <Switch 
-                    checked={phoneContactEnabled} 
-                    onCheckedChange={async (checked) => {
-                      setPhoneContactEnabled(checked);
-                      try {
-                        await onSave({ phoneContactEnabled: checked });
-                        toast.success(checked ? "เปิดแสดงปุ่มโทรติดต่อตรงแล้ว" : "ปิดแสดงปุ่มโทรติดต่อตรงแล้ว");
-                      } catch (err) {
-                        toast.error("บันทึกการตั้งค่าไม่สำเร็จ");
-                      }
-                    }} 
-                  />
-                </div>
-                
-                <div className="flex justify-end pt-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="text-destructive hover:bg-destructive/10"
-                    onClick={async () => {
-                      if (confirm("คุณต้องการยกเลิกการสมัครฟีเจอร์นี้ใช่หรือไม่?")) {
-                        setIsSaving(true);
-                        try {
-                          await onSave({ phoneContactEnabled: false });
-                          setPhoneContactEnabled(false);
-                          toast.success("ยกเลิกการสมัครฟีเจอร์เบอร์โทรติดต่อตรงแล้ว");
-                        } catch (err) {
-                          toast.error("ไม่สามารถยกเลิกการสมัครได้");
-                        } finally {
-                          setIsSaving(false);
-                        }
-                      }
-                    }}
-                  >
-                    Cancel Subscription (ยกเลิกการสมัครบริการ)
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="rounded-xl border border-dashed border-border/80 bg-muted/20 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-semibold">อัปเกรดเพื่อรับปุ่ม Direct Call</p>
-                  <p className="text-xs text-muted-foreground">
-                    ผู้เช่าจะเห็นปุ่มโทรหาคุณทันที ช่วยเพิ่มโอกาสในการปล่อยเช่าได้เร็วขึ้นสูงสุด 35%
-                  </p>
-                </div>
-                <Button
-                  className="gap-2 shrink-0 bg-primary hover:bg-primary/95 text-primary-foreground font-semibold"
-                  disabled={isSubscribing}
-                  onClick={async () => {
-                    setIsSubscribing(true);
-                    toast.info("กำลังประมวลผลการชำระเงินจำลอง...");
-                    
-                    setTimeout(async () => {
-                      try {
-                        await onSave({ phoneContactEnabled: true });
-                        setPhoneContactEnabled(true);
-                        toast.success("สมัครบริการ Direct Call เรียบร้อยแล้ว! (จำลองการตัดเงิน ฿199)");
-                      } catch (err) {
-                        toast.error("การสมัครบริการล้มเหลว");
-                      } finally {
-                        setIsSubscribing(false);
-                      }
-                    }, 1500);
-                  }}
-                >
-                  {isSubscribing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> Subscribing...
-                    </>
-                  ) : (
-                    <>Subscribe now for ฿199/mo</>
-                  )}
-                </Button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
 
       <section className="rounded-2xl border border-border bg-card p-6">
         <div className="flex items-center gap-2">
