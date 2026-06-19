@@ -121,14 +121,16 @@ export function ChatWidget() {
     <div id="bn-root">
       <div
         className="bn-customerchat"
-        bot_id="6a0c0afb27dc008651083b76"
-        bot_logo="https://img1.pic.in.th/images/botnoi_group_logo-fotor-20260528143934.png"
-        bot_name="Nong BOTNOI"
-        theme_color="#e2f2ff"
-        locale="th"
-        logged_in_greeting="สวัสดีครับ มีอะไรให้น้องบอทช่วยไหมครับ"
-        greeting_message="สวัสดีค่ะ Modern Trust ยินดีให้บริการค่ะ แพลตฟอร์มที่ช่วยให้การเช่าและการปล่อยเช่าที่พักอาศัยเป็นเรื่องง่าย สะดวก และปลอดภัยที่สุด"
-        default_open="false"
+        {...{
+          "data-bot-id": "6a0c0afb27dc008651083b76",
+          "data-bot-logo": "https://img1.pic.in.th/images/botnoi_group_logo-fotor-20260528143934.png",
+          "data-bot-name": "Nong BOTNOI",
+          "data-theme-color": "#e2f2ff",
+          "data-locale": "th",
+          "data-logged-in-greeting": "สวัสดีครับ มีอะไรให้น้องบอทช่วยไหมครับ",
+          "data-greeting-message": "สวัสดีค่ะ Modern Trust ยินดีให้บริการค่ะ แพลตฟอร์มที่ช่วยให้การเช่าและการปล่อยเช่าที่พักอาศัยเป็นเรื่องง่าย สะดวก และปลอดภัยที่สุด",
+          "data-default-open": "false",
+        }}
       />
     </div>
   );
