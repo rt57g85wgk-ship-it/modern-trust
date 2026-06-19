@@ -15,7 +15,6 @@ import {
   Maximize,
   MessageCircle,
   PawPrint,
-  Phone,
   ShieldCheck,
   Star,
   WalletCards,
@@ -442,37 +441,56 @@ function PropertyPage() {
                   <LineIcon className="h-5 w-5 fill-current" />
                   Contact LINE
                 </Button>
-                <a
-                  href={`tel:${listing.landlord.phone || "081-234-5678"}`}
-                  className="w-full"
+
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-[#00AEFF] hover:bg-[#009BE5] text-white"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const phone = listing.landlord.phone || "081-234-5678";
+                    window.location.href = `tel:${phone}`;
+                  }}
                 >
-                  <Button
-                    className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-primary hover:bg-primary/95 text-primary-foreground"
-                    size="lg"
-                    disabled={!listing.available}
-                  >
-                    <Phone className="h-5 w-5" />
-                    Call Landlord
-                  </Button>
-                </a>
+                  <Bot className="h-5 w-5 shrink-0" />
+                  Call Botnoi AI
+                </Button>
               </div>
             ) : (
-              <Button
-                className="mt-5 w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
-                size="lg"
-                disabled={!listing.available}
-                onClick={() => {
-                  if (!user) {
-                    void navigate({ to: "/login" });
-                    return;
-                  }
-                  setContactOpen(true);
-                }}
-                style={{ backgroundColor: "#06C755", color: "white" }}
-              >
-                <MessageCircle className="h-6 w-6" />
-                Contact Landlord
-              </Button>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={() => {
+                    if (!user) {
+                      void navigate({ to: "/login" });
+                      return;
+                    }
+                    setContactOpen(true);
+                  }}
+                  style={{ backgroundColor: "#06C755", color: "white" }}
+                >
+                  <MessageCircle className="h-6 w-6" />
+                  Contact Landlord
+                </Button>
+
+                <Button
+                  className="w-full gap-2 rounded-xl py-6 text-base font-semibold shadow-md hover:shadow-lg hover:scale-[1.01] transition-all bg-[#00AEFF] hover:bg-[#009BE5] text-white"
+                  size="lg"
+                  disabled={!listing.available}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const phone = listing.landlord.phone || "081-234-5678";
+                    window.location.href = `tel:${phone}`;
+                  }}
+                >
+                  <Bot className="h-5 w-5 shrink-0" />
+                  Call Botnoi AI
+                </Button>
+              </div>
             )}
             <p className="mt-3 text-center text-xs text-muted-foreground">
               {t("property.bookingNote")}

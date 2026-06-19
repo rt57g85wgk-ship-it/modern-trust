@@ -22,7 +22,6 @@ import {
   Upload,
   BadgeCheck,
   Loader2,
-  Phone,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -473,13 +472,11 @@ const seedUnits: Unit[] = [];
 
 function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () => void }) {
   const { t } = useTranslation();
-  const { user, updateProfile } = useApp();
   const [units, setUnits] = useState<Unit[]>(seedUnits);
   const [editing, setEditing] = useState<Unit | null>(null);
   const [creating, setCreating] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isSubscribing, setIsSubscribing] = useState(false);
 
   const requireOwnerId = async (): Promise<string> => {
     const {
@@ -967,95 +964,6 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
         <section className="rounded-2xl border border-border bg-card p-6 flex flex-col">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
-
-        {user && (
-          <section className={cn(
-            "rounded-2xl border p-6 flex flex-col justify-between transition-all bg-card",
-            user.phoneContactEnabled ? "border-success bg-success/[0.02]" : "border-border"
-          )}>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Phone className={cn("h-5 w-5", user.phoneContactEnabled ? "text-success" : "text-primary")} />
-                  <h2 className="font-semibold text-base">Direct Call</h2>
-                </div>
-                {user.phoneContactEnabled ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-2.5 py-0.5 text-[10px] font-medium text-success">
-                    Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
-                    Premium
-                  </span>
-                )}
-              </div>
-
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {user.phoneContactEnabled
-                  ? "เปิดใช้งานปุ่มโทรตรงแล้ว ผู้เช่าสามารถโทรหาคุณโดยตรงผ่านปุ่มบนหน้าประกาศของคุณ"
-                  : "แสดงปุ่มโทรศัพท์มือถือบนหน้าประกาศของคุณเพื่อเพิ่มโอกาสในการปล่อยเช่าได้เร็วขึ้น"}
-              </p>
-            </div>
-
-            <div className="mt-6 pt-4 border-t border-border/50">
-              {user.phoneContactEnabled ? (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-success text-success hover:bg-success/10 hover:text-success font-semibold"
-                  disabled={isSubscribing}
-                  onClick={async () => {
-                    setIsSubscribing(true);
-                    setTimeout(async () => {
-                      try {
-                        await updateProfile({ phoneContactEnabled: false });
-                        toast.success("ปิดใช้งานฟีเจอร์เบอร์โทรติดต่อตรงแล้ว");
-                      } catch (err) {
-                        toast.error("ปิดใช้งานล้มเหลว");
-                      } finally {
-                        setIsSubscribing(false);
-                      }
-                    }, 1000);
-                  }}
-                >
-                  {isSubscribing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> กำลังดำเนินการ...
-                    </>
-                  ) : (
-                    <>ปิดใช้งาน (Deactivate)</>
-                  )}
-                </Button>
-              ) : (
-                <Button
-                  className="w-full gap-2 bg-primary hover:bg-primary/95 text-primary-foreground font-semibold py-5"
-                  disabled={isSubscribing}
-                  onClick={async () => {
-                    setIsSubscribing(true);
-                    toast.info("กำลังดำเนินการชำระเงินจำลอง...");
-                    setTimeout(async () => {
-                      try {
-                        await updateProfile({ phoneContactEnabled: true });
-                        toast.success("สมัครบริการ Direct Call เรียบร้อยแล้ว! (จำลองการตัดเงิน ฿199/เดือน)");
-                      } catch (err) {
-                        toast.error("การสมัครบริการล้มเหลว");
-                      } finally {
-                        setIsSubscribing(false);
-                      }
-                    }, 1500);
-                  }}
-                >
-                  {isSubscribing ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" /> เปิดใช้งาน...
-                    </>
-                  ) : (
-                    <>เปิดใช้งาน (฿199/เดือน)</>
-                  )}
-                </Button>
-              )}
-            </div>
-          </section>
-        )}
 
         <section className="rounded-2xl border border-border bg-card p-6">
           <h2 className="font-semibold">{t("dashboard.profile")}</h2>
