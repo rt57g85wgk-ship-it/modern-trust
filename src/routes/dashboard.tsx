@@ -950,6 +950,20 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
       </section>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 ">
+        <section className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <h2 className="font-semibold">{t("dashboard.aiTips")}</h2>
+          </div>
+          <ul className="mt-4 space-y-3 text-sm">
+            {aiTips.map((tip) => (
+              <li key={tip} className="flex gap-2 rounded-lg bg-muted/40 p-3">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {tip}
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <section className="rounded-2xl border border-border bg-card p-6 flex flex-col">
           <VerificationPanel verified={verified} onVerify={onVerify} />
         </section>
@@ -1074,22 +1088,6 @@ function LandlordView({ verified, onVerify }: { verified: boolean; onVerify: () 
               </Button>
             </Link>
           </div>
-        </section>
-      </div>
-
-      <div className="mt-8 grid gap-6 lg:grid-cols-1">
-        <section className="rounded-2xl border border-border bg-card p-6">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
-            <h2 className="font-semibold">{t("dashboard.aiTips")}</h2>
-          </div>
-          <ul className="mt-4 space-y-3 text-sm">
-            {aiTips.map((tip) => (
-              <li key={tip} className="flex gap-2 rounded-lg bg-muted/40 p-3">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {tip}
-              </li>
-            ))}
-          </ul>
         </section>
       </div>
 
@@ -1818,6 +1816,7 @@ function PromoteToggle({
         <Sparkles className="h-3 w-3" />{" "}
         {promoted ? t("dashboard.promoted") : t("dashboard.promote")}
       </button>
+
       <PromoteModal
         open={open}
         onClose={() => setOpen(false)}

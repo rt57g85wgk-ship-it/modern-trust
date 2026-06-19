@@ -48,6 +48,14 @@ const LIFESTYLE_TAGS = [
   "Family",
 ];
 
+const LANGUAGES = [
+  { code: "th", label: "ไทย" },
+  { code: "en", label: "English" },
+  { code: "jp", label: "日本語" },
+  { code: "kr", label: "한국어" },
+  { code: "cn", label: "中文" },
+];
+
 function AccountPage() {
   const { user, updateProfile, verifyIdentity, authLoading } = useApp();
   const nav = useNavigate();
@@ -470,6 +478,7 @@ function SettingsTab({
   const { toggleLang } = useApp();
   const [phone, setPhone] = useState(u.phone ?? "");
   const [lineId, setLineId] = useState(u.lineId ?? "");
+  const [currentLang, setCurrentLang] = useState(u.language || "en");
   const [lineQrUrl, setLineQrUrl] = useState(u.lineQrUrl ?? "");
   const [lineQrFile, setLineQrFile] = useState<File | null>(null);
   const [notifyEmail, setNotifyEmail] = useState(u.notifyEmail ?? true);
@@ -490,6 +499,7 @@ function SettingsTab({
     setNotifyEmail(u.notifyEmail ?? true);
     setNotifyPush(u.notifyPush ?? true);
     setNotifySms(u.notifySms ?? false);
+    setCurrentLang(u.language || "en");
   }, [user]);
 
   const save = async () => {
@@ -542,6 +552,7 @@ function SettingsTab({
         notifyEmail,
         notifyPush,
         notifySms,
+        language: currentLang,
       });
       setLineQrFile(null);
       toast.success("Settings saved");
@@ -581,10 +592,26 @@ function SettingsTab({
             </Field>
           )}
           <Field label="Language">
-            <Button variant="outline" className="w-full justify-start gap-2" onClick={toggleLang} disabled={isSaving}>
-              <Globe className="h-4 w-4" /> Switch language
-            </Button>
-          </Field>
+  <div className="relative">
+    <select
+      value={currentLang}
+      disabled={isSaving}
+      onChange={(e) => setCurrentLang(e.target.value)}
+      className="h-10 w-full rounded-md border border-input bg-background px-3 pr-10 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none"
+    >
+      <option value="th">ไทย</option>
+      <option value="en">English</option>
+      <option value="jp">日本語</option>
+      <option value="kr">한국어</option>
+      <option value="cn">中文</option>
+    </select>
+    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground">
+      <svg className="h-4 w-4 fill-current" viewBox="0 0 20 20">
+        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+      </svg>
+    </div>
+  </div>
+</Field>
 
           {u.role === "landlord" && (
             <div className="sm:col-span-2 space-y-2 pt-2 border-t border-border/50">

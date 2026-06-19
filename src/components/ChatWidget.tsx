@@ -5,10 +5,8 @@ export function ChatWidget() {
   const location = useLocation();
   const pathname = location.pathname;
 
-  const isHomepage = pathname === "/";
-  const isDashboard = pathname.includes("/dashboard") || pathname.includes("/landlord") || pathname.includes("/renter");
   const isPropertyDetail = pathname.includes("/property/");
-  const shouldShow = isHomepage || isDashboard || isPropertyDetail;
+  const shouldShow = true;
 
   // Extract room_id if on property detail page
   const roomId = isPropertyDetail ? pathname.split("/").pop() : null;
